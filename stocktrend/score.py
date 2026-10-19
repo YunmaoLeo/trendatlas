@@ -1,10 +1,22 @@
-"""Transparent, book-inspired technical buy reference for the current bar.
+"""Book-inspired experimental conditions, with evidence-gated buy assessment.
 
 The book does not prescribe a 0-100 score. Weights and cutoffs are engineering
-choices, disclosed with every result. This is not a probability or order.
+choices. Their historical validation failed, so no actionable score is emitted.
 """
 
+import json
 from datetime import date
+from functools import lru_cache
+from pathlib import Path
+
+
+@lru_cache(maxsize=1)
+def _calibration() -> dict | None:
+    path = Path(__file__).resolve().parent.parent / "research" / "calibration.json"
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
 
 
 def buy_reference(analysis: dict) -> dict:
@@ -89,23 +101,35 @@ def buy_reference(analysis: dict) -> dict:
     parts.append({"key": "price_position", "label": "价格位置", "points": position_points,
                   "max_points": 25, "reason": position_reason})
 
-    score = sum(part["points"] for part in parts)
-    if score >= 75:
-        label = "技术条件较强"
-    elif score >= 60:
-        label = "部分条件支持买入，仍需确认"
-    elif score >= 40:
-        label = "先观察"
-    else:
-        label = "当前条件偏弱，暂缓"
+    experimental_score = sum(part["points"] for part in parts)
+    calibration = _calibration()
+    validation = None
+    if calibration:
+        results = calibration["evaluation"]
+        symbol = analysis.get("symbol", "")
+        validation = {
+            "as_of": calibration["as_of"], "horizon_trading_days": calibration["horizon_trading_days"],
+            "symbols": calibration["symbols"], "symbol_in_sample": symbol in calibration["symbols"],
+            "holdout": results["holdout"], "baseline": results["holdout_constant_baseline"],
+            "old_score_at_least_60": results["old_score_at_least_60"],
+            "this_symbol": results["by_symbol"].get(symbol),
+            "this_symbol_old_score_at_least_60": results["by_symbol_old_score_at_least_60"].get(symbol),
+            "candidate_beats_baseline": results["candidate_beats_baseline"],
+        }
     interval = analysis.get("source", {}).get("interval", "1d")
     max_age = 21 if interval == "1wk" else 7
     age = (date.today() - date.fromisoformat(analysis["last"]["date"])).days
+    common = {"score": None, "experimental_score": experimental_score, "parts": parts,
+              "validation": validation,
+              "room_risk_ratio": round(room_risk_ratio, 4) if room_risk_ratio is not None else None,
+              "as_of": analysis["last"]["date"]}
     if age > max_age:
-        return {"score": None, "label": "行情过期，暂不评分", "parts": parts,
-                "room_risk_ratio": round(room_risk_ratio, 4) if room_risk_ratio is not None else None,
-                "as_of": analysis["last"]["date"], "note": "行情距今过久，不能称为当前买入参考值。"}
-    return {"score": score, "label": label, "parts": parts,
-            "room_risk_ratio": round(room_risk_ratio, 4) if room_risk_ratio is not None else None,
-            "as_of": analysis["last"]["date"],
-            "note": "仅按本书相关技术条件形成的工程参考分；权重不是原书公式，也不是上涨概率或个人投资建议。"}
+        return {**common, "label": "行情过期，无法评估", "note": "最后一根行情距今过久；旧规则分仅供检查计算。"}
+    if validation is None:
+        return {**common, "label": "缺少历史校准，暂无可靠买入分",
+                "note": "没有可核对的历史校准报告；旧规则分仅供审计。"}
+    if validation["candidate_beats_baseline"]:
+        return {**common, "label": "候选模型待审核，暂无正式买入分",
+                "note": "旧规则门槛未获支持；候选模型即使在本次留出集优于基准，也还未完成独立确认或部署。"}
+    return {**common, "label": "历史检验未通过，暂无可靠买入分",
+            "note": "旧规则分保留供审计。其 60/75 分门槛没有在留出样本中证明有效；新拟合模型的误差也高于简单基准。"}

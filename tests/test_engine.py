@@ -134,13 +134,14 @@ class EngineTest(unittest.TestCase):
                     "risk": {"protective_reference": 90, "distance_pct": 10},
                     "source": {"interval": "1d"}}
         strong = buy_reference(analysis)
-        self.assertEqual(strong["score"], 100)
-        self.assertEqual(sum(part["points"] for part in strong["parts"]), strong["score"])
+        self.assertIsNone(strong["score"])
+        self.assertEqual(strong["experimental_score"], 100)
+        self.assertEqual(sum(part["points"] for part in strong["parts"]), strong["experimental_score"])
         analysis["trend"]["direction"] = "下降趋势"
         analysis["patterns"] = [{"name": "双重顶", "status": "已确认", "direction": "down"}]
         analysis["levels"]["resistance"]["price"] = 101
         weak = buy_reference(analysis)
-        self.assertLess(weak["score"], strong["score"])
+        self.assertLess(weak["experimental_score"], strong["experimental_score"])
         analysis["last"]["date"] = (date.today() - timedelta(days=10)).isoformat()
         self.assertIsNone(buy_reference(analysis)["score"])
 

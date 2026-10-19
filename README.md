@@ -25,6 +25,7 @@ CLI 标准输出只有一份 JSON，错误写入标准错误并以非零状态�
 .venv/bin/python -m stocktrend.portfolio --csv ./holdings.csv --capital 100000
 .venv/bin/python -m stocktrend.replay AAPL --period 5y --horizon 20 --warmup 120 > /tmp/aapl-replay.json
 .venv/bin/python -m stocktrend.replay TEST --csv ./sample.csv --horizon 20
+.venv/bin/python -m stocktrend.calibrate --symbols VOO QQQ NVDA MU --horizon 20
 ```
 
 行情 CSV 列为 `date,open,high,low,close,volume`；组合 CSV 列为 `symbol,shares,last,stop`。REST API：`GET /api/analyze?symbol=AAPL&period=2y&interval=1d`，可选 `entry_date=YYYY-MM-DD`；历史回放：`GET /api/replay?symbol=AAPL&period=2y&horizon=20&warmup=120`。OpenAPI 文档位于 `/docs`。请求参数经过白名单校验；无须 AI 模型或私有密钥。调用者应优先使用 `summary`、`trend`、`patterns`、`events`、`levels`、`risk`、`buy_reference`、`warnings`，并保留 `source.as_of` 与 `method`。`bars`/`indicators` 用于绘图。
@@ -34,7 +35,7 @@ CLI 标准输出只有一份 JSON，错误写入标准错误并以非零状态�
 - 历史价格通过开源 [yfinance](https://github.com/ranaroussi/yfinance) 获取。其背后的 Yahoo 数据接口供个人研究使用；该项目与 Yahoo 无关联。行情可延迟、缺失或被限流，界面显示实际最后交易日。取不到数据时 CLI 可用 CSV 离线复现。
 - 默认 `auto_adjust=True`，价格按拆股与分红调整；成交量保持数据源数值。周线聚合由行情源完成。比较历史形态时需注意复权与真实成交价的差异。
 - 本工具识别的是**规则匹配**，不是经样本外回测的预测模型。形态测算位和保护参考位均可能失效，跳空可能越过止损价。
-- 当前买入参考值为透明的 0–100 分工程评分：趋势 25、形态 30、均线 10、成交量 10、价格位置 25。每一项在 JSON 和界面中解释；原书没有此百分制，分数不等于上涨概率，行情过期时不评分。
+- 当前买入评估已加入 VOO、QQQ、NVDA、MU 的样本外历史检验。旧 0–100 分及 60/75 分门槛未获支持，候选新模型误差也高于简单基准；因此 `buy_reference.score` 暂为 `null`，旧分保留在 `experimental_score` 和 `parts` 供审计。检验方法、完整观察点与局限见 [CALIBRATION.md](./CALIBRATION.md)。
 - 历史回放逐日截断数据来生成信号，再用随后固定期数检验方向化价格变化；输出不是交易盈亏。复权历史可能被未来公司行为回溯改写，同一时段的形态窗口也可能重叠。详见 [REPLAY.md](./REPLAY.md)。
 - 已实现趋势线、支撑/阻力、头肩、双/三重顶底、三角形、箱体、楔形、缺口/反转日候选、ATR、保护参考与组合正常风险。原书与工程参数区别见 [KNOWLEDGE.md](./KNOWLEDGE.md)，逐章差距见 [COVERAGE.md](./COVERAGE.md)。
 

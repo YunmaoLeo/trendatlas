@@ -11,7 +11,7 @@ from .engine import analyze
 from .replay import replay
 
 WEB = Path(__file__).resolve().parent.parent / "web"
-app = FastAPI(title="股市趋势技术分析 Lab", version="1.3.0")
+app = FastAPI(title="股市趋势技术分析 Lab", version="1.4.0")
 app.mount("/assets", StaticFiles(directory=WEB), name="assets")
 
 

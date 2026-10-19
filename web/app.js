@@ -92,11 +92,25 @@
     const reference = result.buy_reference;
     const score = reference?.score;
     $('buy-score').textContent = score == null ? '—' : String(score);
+    document.querySelector('.buy-score-number span').textContent = score == null ? '未评分' : '/ 100';
     $('buy-score-label').textContent = reference?.label || '暂时无法计算';
     $('buy-score-fill').style.width = `${score == null ? 0 : score}%`;
+    document.querySelector('.buy-score-track').style.display = score == null ? 'none' : '';
     $('buy-score-fill').className = score == null || score < 40 ? 'low' : score < 60 ? 'mid' : 'high';
+    const validation = reference?.validation;
+    if (validation) {
+      const high = validation.old_score_at_least_60;
+      const ticker = validation.this_symbol_old_score_at_least_60;
+      const tickerAll = validation.this_symbol;
+      const scoreText = reference.experimental_score == null ? '' : `旧规则试验分 ${reference.experimental_score}/100。`;
+      const tickerText = validation.symbol_in_sample && tickerAll ? `本股历史观察 ${tickerAll.count} 次，其中旧分达到 60 的 ${ticker?.count || 0} 次${ticker?.count ? `，${fmt(ticker.rise_pct)}% 在 ${validation.horizon_trading_days} 日后上涨` : ''}。` : '这只股票未参与此次历史测算。';
+      const heading = validation.candidate_beats_baseline ? '旧分门槛未获支持；候选模型待审核' : '这次历史检验没有证明分数有效';
+      $('buy-validation').innerHTML = `<strong>${heading}</strong><span>${esc(validation.symbols.join('、'))} 的最近留出数据：旧分达到 60 的 ${high.count} 次，${fmt(high.rise_pct)}% 在 ${validation.horizon_trading_days} 个交易日后上涨；任意观察点 ${validation.holdout.count} 次，${fmt(validation.holdout.rise_pct)}% 上涨。</span><span>新拟合模型误差 ${validation.holdout.brier_loss}，简单基准 ${validation.baseline.brier_loss}；越小越好。</span><small>${esc(tickerText)}${esc(scoreText)}</small>`;
+    } else {
+      $('buy-validation').textContent = '尚无可核对的历史校准结果。';
+    }
     $('buy-score-parts').innerHTML = (reference?.parts || []).map(part => `<div class="score-part"><div><span>${esc(part.label)}</span><strong>${part.points}/${part.max_points}</strong></div><small>${esc(part.reason)}</small></div>`).join('');
-    $('buy-score-note').textContent = `截至 ${reference?.as_of || result.last.date} · 这是只看技术面的工程参考分，不是上涨概率或个人投资建议。`;
+    $('buy-score-note').textContent = `截至 ${reference?.as_of || result.last.date} · 旧分数的权重与门槛未经证明，当前不输出买入推荐值。历史比较不包含实际成交成本。`;
   }
 
   function render(result) {
@@ -140,10 +154,13 @@
     $('run-replay').disabled = false;
     $('replay-results').textContent = '点击“查看历史”，了解这些图形过去出现后的股价变化。';
     $('buy-score').textContent = '—';
+    document.querySelector('.buy-score-number span').textContent = '未评分';
+    document.querySelector('.buy-score-track').style.display = 'none';
     $('buy-score-label').textContent = '正在检查当前价格与书中规则…';
     $('buy-score-parts').innerHTML = '';
+    $('buy-validation').textContent = '';
     $('buy-score-fill').style.width = '0%';
-    $('buy-score-note').textContent = '分数由当前趋势、形态、均线、成交量和价位计算。';
+    $('buy-score-note').textContent = '正在核对行情和历史检验结果。';
     $('summary').textContent = '正在获取历史价格并匹配书籍规则…';
     $('ticker-meta').textContent = '正在获取历史日线…';
     const params = new URLSearchParams({symbol:state.symbol,period:state.period,interval:state.interval});
