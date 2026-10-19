@@ -1,9 +1,10 @@
 import unittest
 from datetime import date, timedelta
 
-from stocktrend.data import normalize_symbol, validate_bars
+from stocktrend.data import audit_bars, normalize_symbol, validate_bars
 from stocktrend.engine import _pivots, analyze
 from stocktrend.portfolio import assess
+from stocktrend.replay import replay
 
 
 def bars_from_points(points, volume=1000):
@@ -103,6 +104,25 @@ class EngineTest(unittest.TestCase):
         ladder = analyze(bars, "TEST", entry_date=bars[10]["date"])["risk"]["basis_ladder"]
         self.assertTrue(any(update["reason"] == "越过前高3%" for update in ladder["recent_updates"]))
         self.assertGreaterEqual(ladder["variant2"]["stop"], ladder["variant1"]["stop"])
+
+    def test_replay_signal_uses_only_historical_prefix(self):
+        bars = bars_from_points([(0,90),(20,100),(35,120),(55,100),(75,121),
+                                 (86,94),(120,91),(150,93)])
+        early = replay(bars[:110], "TEST", horizon=10, warmup=60)
+        later = replay(bars, "TEST", horizon=10, warmup=60)
+        self.assertEqual(early["signal_count"], 1)
+        self.assertEqual(early["signals"][0], later["signals"][0])
+        self.assertEqual(early["signals"][0]["pattern"], "双重顶")
+        self.assertTrue(early["signals"][0]["outcome"]["complete"])
+
+    def test_data_audit_flags_without_dropping_bars(self):
+        bars = bars_from_points([(0,100),(60,100)])
+        bars[20]["volume"] = 0
+        bars[30].update(open=150, high=151, low=149, close=150)
+        audit = audit_bars(bars)
+        self.assertEqual(audit["bar_count"], len(bars))
+        self.assertEqual({issue["code"] for issue in audit["issues"]},
+                         {"zero_volume", "large_close_move"})
 
 
 if __name__ == "__main__":

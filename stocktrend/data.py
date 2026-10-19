@@ -59,6 +59,37 @@ def from_csv(path: str | Path) -> list[dict]:
     return validate_bars(rows)
 
 
+def audit_bars(bars: list[dict], interval: str = "1d") -> dict:
+    """Report suspicious observations without deleting genuine market moves."""
+    if interval not in INTERVALS:
+        raise ValueError("interval 应为 1d 或 1wk")
+    rows = validate_bars(bars)
+    zero_volume = [bar["date"] for bar in rows if bar["volume"] == 0]
+    max_gap_days = 10 if interval == "1d" else 21
+    long_gaps = []
+    large_moves = []
+    move_floor = .35 if interval == "1d" else .5
+    for previous, current in zip(rows, rows[1:]):
+        gap_days = (calendar_date.fromisoformat(current["date"]) - calendar_date.fromisoformat(previous["date"])).days
+        if gap_days > max_gap_days:
+            long_gaps.append({"after": previous["date"], "before": current["date"], "calendar_days": gap_days})
+        move = current["close"] / previous["close"] - 1
+        if abs(move) >= move_floor:
+            large_moves.append({"date": current["date"], "close_change_pct": round(move * 100, 2)})
+    issues = []
+    if zero_volume:
+        issues.append({"code": "zero_volume", "count": len(zero_volume), "examples": zero_volume[:5],
+                       "message": "存在零成交量 K 线；量能确认可能无法使用"})
+    if long_gaps:
+        issues.append({"code": "long_calendar_gap", "count": len(long_gaps), "examples": long_gaps[:5],
+                       "message": "相邻 K 线间隔异常长；请核查停牌或缺失数据"})
+    if large_moves:
+        issues.append({"code": "large_close_move", "count": len(large_moves), "examples": large_moves[:5],
+                       "message": "存在大幅单期收盘变化；请核查公司行为、复权和真实行情"})
+    return {"bar_count": len(rows), "first_date": rows[0]["date"], "last_date": rows[-1]["date"],
+            "interval": interval, "issues": issues, "status": "review" if issues else "ok"}
+
+
 def from_yfinance(symbol: str, period: str = "2y", interval: str = "1d") -> tuple[list[dict], dict]:
     if period not in PERIODS or interval not in INTERVALS:
         raise ValueError("period 应为 6mo/1y/2y/5y；interval 应为 1d/1wk")

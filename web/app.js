@@ -2,8 +2,8 @@
   const $ = (id) => document.getElementById(id);
   const fmt = (n, digits = 2) => Number.isFinite(Number(n)) ? Number(n).toLocaleString('en-US', {minimumFractionDigits: digits, maximumFractionDigits: digits}) : '—';
   const esc = (v) => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-  const state = {symbol:'AAPL', period:'2y', interval:'1d', entryDate:'', result:null, loading:false, logarithmic:false};
-  let toastTimer, requestId = 0, chart, candles, volume, ma50, ma200, trendSeries, priceLines = [];
+  const state = {symbol:'AAPL', period:'2y', interval:'1d', entryDate:'', result:null, loading:false, replayLoading:false, logarithmic:false};
+  let toastTimer, requestId = 0, replayRequestId = 0, chart, candles, volume, ma50, ma200, trendSeries, priceLines = [];
 
   function toast(message) {
     $('toast').textContent = message;
@@ -121,7 +121,11 @@
 
   async function load() {
     const id = ++requestId;
+    replayRequestId++;
     state.loading = true;
+    state.replayLoading = false;
+    $('run-replay').disabled = false;
+    $('replay-results').textContent = '按需运行；当前图表不会自动使用未来数据评价信号。';
     $('summary').textContent = '正在获取历史价格并匹配书籍规则…';
     $('ticker-meta').textContent = '正在获取历史日线…';
     const params = new URLSearchParams({symbol:state.symbol,period:state.period,interval:state.interval});
@@ -139,6 +143,29 @@
       $('ticker-meta').textContent = String(error.message);
       toast(`无法载入：${error.message}`);
     } finally { if (id === requestId) state.loading = false; }
+  }
+
+  async function runReplay() {
+    if (!state.result || state.replayLoading) return;
+    const id = ++replayRequestId;
+    const horizon = state.interval === '1wk' ? 8 : 20;
+    const warmup = Math.min(120, Math.max(50, Math.floor(state.result.bars.length * .4)));
+    const params = new URLSearchParams({symbol:state.symbol,period:state.period,interval:state.interval,horizon:String(horizon),warmup:String(warmup)});
+    state.replayLoading = true;
+    $('run-replay').disabled = true;
+    $('replay-results').textContent = '正在逐根重建历史图表…';
+    try {
+      const response = await fetch(`/api/replay?${params}`);
+      const result = await response.json();
+      if (id !== replayRequestId) return;
+      if (!response.ok) throw new Error(result.detail || '回放失败');
+      const rows = result.by_pattern.map(item => `<div class="replay-row"><span>${esc(item.pattern)} · ${item.direction==='up'?'向上':'向下'}<small>${item.complete_windows} 个完整窗口 / ${item.signals} 个信号</small></span><strong>${item.mean_directional_return_pct == null ? '—' : `${item.mean_directional_return_pct >= 0 ? '+' : ''}${fmt(item.mean_directional_return_pct)}%`}</strong></div>`).join('');
+      $('replay-results').innerHTML = `<div class="replay-overview">${result.signal_count} 个新确认信号 · ${result.complete_count} 个完整 ${horizon} 期窗口 · ${result.pending_count} 个未完成窗口</div>${rows || '<p class="mini-note">该时段内未找到可评价的新确认形态。</p>'}<p class="mini-note">右侧数值为方向化平均价格变化；样本窗口可能重叠，不能当成策略收益或胜率。</p>${result.warnings.map(w => `<div class="replay-warning">${esc(w)}</div>`).join('')}`;
+    } catch (error) {
+      if (id === replayRequestId) $('replay-results').textContent = `回放失败：${error.message}`;
+    } finally {
+      if (id === replayRequestId) { state.replayLoading = false; $('run-replay').disabled = false; }
+    }
   }
 
   function select(group, attr, value) {
@@ -176,6 +203,7 @@
   $('entry-form').addEventListener('submit', e => {
     e.preventDefault(); state.entryDate = $('entry-date').value; load();
   });
+  $('run-replay').addEventListener('click', runReplay);
   $('log-toggle').addEventListener('click', () => {
     state.logarithmic = !state.logarithmic;
     chart.priceScale('right').applyOptions({mode:state.logarithmic ? LightweightCharts.PriceScaleMode.Logarithmic : LightweightCharts.PriceScaleMode.Normal});

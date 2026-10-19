@@ -8,9 +8,10 @@ from fastapi.staticfiles import StaticFiles
 
 from .data import from_yfinance, normalize_symbol
 from .engine import analyze
+from .replay import replay
 
 WEB = Path(__file__).resolve().parent.parent / "web"
-app = FastAPI(title="股市趋势技术分析 Lab", version="1.1.0")
+app = FastAPI(title="股市趋势技术分析 Lab", version="1.2.0")
 app.mount("/assets", StaticFiles(directory=WEB), name="assets")
 
 
@@ -41,3 +42,21 @@ def analyze_symbol(
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     except Exception as exc:
         raise HTTPException(status_code=502, detail=f"行情获取失败: {exc}") from exc
+
+
+@app.get("/api/replay")
+def replay_symbol(
+    symbol: str = Query(default="AAPL", min_length=1, max_length=24),
+    period: str = Query(default="2y", pattern="^(6mo|1y|2y|5y)$"),
+    interval: str = Query(default="1d", pattern="^(1d|1wk)$"),
+    horizon: int = Query(default=20, ge=5, le=120),
+    warmup: int = Query(default=120, ge=50),
+):
+    try:
+        normalized = normalize_symbol(symbol)
+        bars, source = from_yfinance(normalized, period, interval)
+        return replay(bars, normalized, horizon, warmup, interval, source)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=f"历史回放失败: {exc}") from exc
