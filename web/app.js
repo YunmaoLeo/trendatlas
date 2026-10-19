@@ -88,6 +88,17 @@
     $('events').innerHTML = events.length ? events.slice(0,4).map(event => `<div class="event-row ${event.direction==='up'?'up':'down'}"><div><strong>${esc(event.type)}</strong><span>${esc(event.date)} · ${esc(event.context)}</span></div><div class="event-state"><strong>${esc(event.status)}</strong><small>${event.magnitude_pct == null ? '' : `区间 ${fmt(event.magnitude_pct)}%`}</small></div></div>`).join('') : '<div class="empty-card">近 45 根 K 线未出现满足条件的缺口或关键反转日候选。</div>';
   }
 
+  function renderBuyScore(result) {
+    const reference = result.buy_reference;
+    const score = reference?.score;
+    $('buy-score').textContent = score == null ? '—' : String(score);
+    $('buy-score-label').textContent = reference?.label || '暂时无法计算';
+    $('buy-score-fill').style.width = `${score == null ? 0 : score}%`;
+    $('buy-score-fill').className = score == null || score < 40 ? 'low' : score < 60 ? 'mid' : 'high';
+    $('buy-score-parts').innerHTML = (reference?.parts || []).map(part => `<div class="score-part"><div><span>${esc(part.label)}</span><strong>${part.points}/${part.max_points}</strong></div><small>${esc(part.reason)}</small></div>`).join('');
+    $('buy-score-note').textContent = `截至 ${reference?.as_of || result.last.date} · 这是只看技术面的工程参考分，不是上涨概率或个人投资建议。`;
+  }
+
   function render(result) {
     state.result = result;
     $('ticker-title').innerHTML = `${esc(result.symbol)} <span>· ${result.source.interval === '1wk' ? '周线' : '日线'}</span>`;
@@ -116,6 +127,7 @@
     updateLegend(result.bars.at(-1));
     renderPatterns(result);
     renderEvents(result);
+    renderBuyScore(result);
     drawChart(result);
   }
 
@@ -123,9 +135,15 @@
     const id = ++requestId;
     replayRequestId++;
     state.loading = true;
+    state.result = null;
     state.replayLoading = false;
     $('run-replay').disabled = false;
-    $('replay-results').textContent = '按需运行；当前图表不会自动使用未来数据评价信号。';
+    $('replay-results').textContent = '点击“查看历史”，了解这些图形过去出现后的股价变化。';
+    $('buy-score').textContent = '—';
+    $('buy-score-label').textContent = '正在检查当前价格与书中规则…';
+    $('buy-score-parts').innerHTML = '';
+    $('buy-score-fill').style.width = '0%';
+    $('buy-score-note').textContent = '分数由当前趋势、形态、均线、成交量和价位计算。';
     $('summary').textContent = '正在获取历史价格并匹配书籍规则…';
     $('ticker-meta').textContent = '正在获取历史日线…';
     const params = new URLSearchParams({symbol:state.symbol,period:state.period,interval:state.interval});
@@ -153,14 +171,29 @@
     const params = new URLSearchParams({symbol:state.symbol,period:state.period,interval:state.interval,horizon:String(horizon),warmup:String(warmup)});
     state.replayLoading = true;
     $('run-replay').disabled = true;
-    $('replay-results').textContent = '正在逐根重建历史图表…';
+    $('replay-results').textContent = '正在查看这些图形以前出现后的股价变化…';
     try {
       const response = await fetch(`/api/replay?${params}`);
       const result = await response.json();
       if (id !== replayRequestId) return;
       if (!response.ok) throw new Error(result.detail || '回放失败');
-      const rows = result.by_pattern.map(item => `<div class="replay-row"><span>${esc(item.pattern)} · ${item.direction==='up'?'向上':'向下'}<small>${item.complete_windows} 个完整窗口 / ${item.signals} 个信号</small></span><strong>${item.mean_directional_return_pct == null ? '—' : `${item.mean_directional_return_pct >= 0 ? '+' : ''}${fmt(item.mean_directional_return_pct)}%`}</strong></div>`).join('');
-      $('replay-results').innerHTML = `<div class="replay-overview">${result.signal_count} 个新确认信号 · ${result.complete_count} 个完整 ${horizon} 期窗口 · ${result.pending_count} 个未完成窗口</div>${rows || '<p class="mini-note">该时段内未找到可评价的新确认形态。</p>'}<p class="mini-note">右侧数值为方向化平均价格变化；样本窗口可能重叠，不能当成策略收益或胜率。</p>${result.warnings.map(w => `<div class="replay-warning">${esc(w)}</div>`).join('')}`;
+      const periodName = {'6mo':'近半年','1y':'近一年','2y':'近两年','5y':'近五年'}[state.period] || '所选时间内';
+      const horizonName = state.interval === '1wk' ? `${horizon} 周` : `${horizon} 个交易日`;
+      const rows = result.by_pattern.map(item => {
+        const expectation = item.direction === 'up' ? '看涨' : '看跌';
+        if (item.mean_directional_return_pct == null) return `<div class="replay-row"><span><b>${esc(item.pattern)} · ${expectation}</b><small>出现 ${item.signals} 次，后续数据还不够</small></span></div>`;
+        const actual = item.direction === 'down' ? -item.mean_directional_return_pct : item.mean_directional_return_pct;
+        const moved = actual >= 0 ? `上涨 ${fmt(actual)}%` : `下跌 ${fmt(-actual)}%`;
+        const match = item.mean_directional_return_pct > 0 ? '与图形判断一致' : item.mean_directional_return_pct < 0 ? '与图形判断相反' : '基本持平';
+        const average = item.complete_windows > 1 ? '平均' : '';
+        return `<div class="replay-row"><span><b>${esc(item.pattern)} · ${expectation}</b><small>出现 ${item.signals} 次，其中 ${item.complete_windows} 次有完整后续数据</small></span><div class="replay-move"><strong>${horizonName}后股价${average}${moved}</strong><small>${match}</small></div></div>`;
+      }).join('');
+      const notes = ['这里只对照后来股价的变化，没有模拟买卖、止损和手续费。过去的走势不能预测下一次。'];
+      if (result.by_pattern.some(item => item.small_sample)) notes.push('每类图形的例子较少，先把数字当作案例看。');
+      if (result.source.adjustment?.includes('auto_adjust')) notes.push('历史价格经过分红和拆股调整，可能和当时看到的价格不同。');
+      if (result.data_quality.issues.length) notes.push('行情中有需要核查的记录，先确认数据是否准确。');
+      if (result.pending_count) notes.push(`${result.pending_count} 次出现得太近，还没有足够的后续行情。`);
+      $('replay-results').innerHTML = `<div class="replay-overview">${periodName}找到 ${result.signal_count} 次符合规则的图形，分布在 ${result.unique_signal_days} 个交易日；其中 ${result.complete_count} 次可以看完整的后续 ${horizonName}。</div>${rows || '<p class="mini-note">这段时间没有找到符合规则的新图形。</p>'}${notes.map(note => `<div class="replay-warning">${esc(note)}</div>`).join('')}`;
     } catch (error) {
       if (id === replayRequestId) $('replay-results').textContent = `回放失败：${error.message}`;
     } finally {

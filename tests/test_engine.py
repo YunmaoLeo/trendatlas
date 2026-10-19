@@ -5,6 +5,7 @@ from stocktrend.data import audit_bars, normalize_symbol, validate_bars
 from stocktrend.engine import _pivots, analyze
 from stocktrend.portfolio import assess
 from stocktrend.replay import replay
+from stocktrend.score import buy_reference
 
 
 def bars_from_points(points, volume=1000):
@@ -123,6 +124,25 @@ class EngineTest(unittest.TestCase):
         self.assertEqual(audit["bar_count"], len(bars))
         self.assertEqual({issue["code"] for issue in audit["issues"]},
                          {"zero_volume", "large_close_move"})
+
+    def test_buy_reference_is_explainable_and_stale_aware(self):
+        analysis = {"last": {"date": date.today().isoformat(), "close": 100, "volume_ratio_20": 1.6},
+                    "trend": {"direction": "上升趋势"},
+                    "patterns": [{"name": "双重底", "status": "已确认", "direction": "up", "target_state": "未触及"}],
+                    "indicators": {"ma50": [{"value": 95}], "ma200": [{"value": 90}]},
+                    "levels": {"resistance": {"price": 130, "method": "确认波段聚类 ±2%"}},
+                    "risk": {"protective_reference": 90, "distance_pct": 10},
+                    "source": {"interval": "1d"}}
+        strong = buy_reference(analysis)
+        self.assertEqual(strong["score"], 100)
+        self.assertEqual(sum(part["points"] for part in strong["parts"]), strong["score"])
+        analysis["trend"]["direction"] = "下降趋势"
+        analysis["patterns"] = [{"name": "双重顶", "status": "已确认", "direction": "down"}]
+        analysis["levels"]["resistance"]["price"] = 101
+        weak = buy_reference(analysis)
+        self.assertLess(weak["score"], strong["score"])
+        analysis["last"]["date"] = (date.today() - timedelta(days=10)).isoformat()
+        self.assertIsNone(buy_reference(analysis)["score"])
 
 
 if __name__ == "__main__":

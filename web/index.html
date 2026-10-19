@@ -15,7 +15,7 @@
       <button class="rail-icon active" title="图表" aria-label="图表">▥</button>
       <button class="rail-icon" id="rail-rules" title="规则" aria-label="规则">≡</button>
       <div class="rail-spacer"></div>
-      <div class="rail-footer">ATLAS<br><span>v1.2</span></div>
+      <div class="rail-footer">ATLAS<br><span>v1.3</span></div>
     </aside>
 
     <div class="workspace">
@@ -35,6 +35,8 @@
             <div><div class="eyebrow">TECHNICAL WORKSPACE / STOCK</div><h1 id="ticker-title">AAPL <span>· 载入中</span></h1><div class="ticker-meta" id="ticker-meta">正在获取历史日线…</div></div>
             <div class="last-price"><strong id="last-price">—</strong><span id="last-change">—</span></div>
           </div>
+
+          <section class="buy-score-card" aria-label="当前买入参考值"><div class="buy-score-top"><div><div class="eyebrow">CURRENT BUY REFERENCE</div><h2>当前买入参考值</h2><p id="buy-score-label">正在检查当前价格与书中规则…</p></div><div class="buy-score-number"><strong id="buy-score">—</strong><span>/ 100</span></div></div><div class="buy-score-track"><div id="buy-score-fill"></div></div><div id="buy-score-parts" class="buy-score-parts"></div><p id="buy-score-note" class="mini-note">分数由当前趋势、形态、均线、成交量和价位计算。</p></section>
 
           <div class="chart-card">
             <div class="chart-toolbar">
@@ -61,7 +63,7 @@
           <div class="section-heading"><div><div class="eyebrow">PRICE EVENTS / CH. 10 &amp; 12</div><h2>缺口与单日反转</h2></div><span class="heading-note" id="event-count">—</span></div>
           <div id="events" class="event-list"><div class="empty-card">正在检索价格事件…</div></div>
 
-          <section class="replay-card"><div class="replay-head"><div><div class="eyebrow">HISTORICAL REPLAY</div><h2>规则的历史表现</h2></div><button id="run-replay" type="button">运行回放</button></div><p class="mini-note">逐根重建当时可见的形态，观察确认后固定期数的方向化价格变化。结果不模拟交易，也不代表策略胜率。</p><div id="replay-results" class="replay-results">按需运行；当前图表不会自动使用未来数据评价信号。</div></section>
+          <section class="replay-card"><div class="replay-head"><div><div class="eyebrow">HISTORICAL REPLAY</div><h2>以前出现类似图形后，股价怎么走？</h2></div><button id="run-replay" type="button">查看历史</button></div><p class="mini-note">按当时已有的价格找出图形，再看之后 20 个交易日（日线）或 8 周（周线）的实际涨跌。</p><div id="replay-results" class="replay-results">点击“查看历史”，了解这些图形过去出现后的股价变化。</div></section>
 
           <div class="bottom-grid">
             <section class="info-card"><div class="info-top"><span class="eyebrow">LEVELS</span><span class="chapter">第 13 章</span></div><h3>关键价位</h3><div id="levels" class="level-list"></div><p class="mini-note">价位是历史波段区域；触及次数可用于判断它是否值得继续观察。</p></section>
