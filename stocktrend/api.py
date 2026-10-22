@@ -11,13 +11,13 @@ from .engine import analyze
 from .replay import replay
 
 WEB = Path(__file__).resolve().parent.parent / "web"
-app = FastAPI(title="股市趋势技术分析 Lab", version="1.5.0")
+app = FastAPI(title="股市趋势技术分析 Lab", version="1.6.0")
 app.mount("/assets", StaticFiles(directory=WEB), name="assets")
 
 
 @app.get("/")
 def home():
-    return FileResponse(WEB / "index.html")
+    return FileResponse(WEB / "index.html", headers={"Cache-Control": "no-store"})
 
 
 @app.get("/api/health")

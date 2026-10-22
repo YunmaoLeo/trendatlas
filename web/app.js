@@ -32,14 +32,14 @@
     chart.subscribeCrosshairMove(param => {
       if (!state.result) return;
       const bar = param.seriesData?.get(candles);
-      if (bar) $('legend-ohlc').textContent = `O ${fmt(bar.open)}   H ${fmt(bar.high)}   L ${fmt(bar.low)}   C ${fmt(bar.close)}`;
+      if (bar) $('legend-ohlc').textContent = `开 ${fmt(bar.open)}   高 ${fmt(bar.high)}   低 ${fmt(bar.low)}   收 ${fmt(bar.close)}`;
       else updateLegend(state.result.bars.at(-1));
     });
     new ResizeObserver(() => chart.applyOptions({width:container.clientWidth,height:container.clientHeight})).observe(container);
   }
 
   function updateLegend(bar) {
-    if (bar) $('legend-ohlc').textContent = `O ${fmt(bar.open)}   H ${fmt(bar.high)}   L ${fmt(bar.low)}   C ${fmt(bar.close)}`;
+    if (bar) $('legend-ohlc').textContent = `开 ${fmt(bar.open)}   高 ${fmt(bar.high)}   低 ${fmt(bar.low)}   收 ${fmt(bar.close)}`;
   }
 
   function drawChart(result) {
@@ -55,12 +55,13 @@
     const add = (price, color, title, style = 2) => {
       if (price > 0) priceLines.push(candles.createPriceLine({price,color,lineWidth:1,lineStyle:style,axisLabelVisible:true,title}));
     };
-    const turning = result.buy_reference?.turning_level?.price;
-    const nearTurning = turning && Math.abs(result.levels.support.price - turning) <= (result.risk.atr20 || 0) * .5;
-    if (!nearTurning) add(result.levels.support.price,'#148c75','支撑');
-    add(result.levels.resistance.price,'#b25965','阻力');
+    const turning = result.trend_outlook?.reference?.price;
+    const nearSupport = turning && Math.abs(result.levels.support.price - turning) <= (result.risk.atr20 || 0) * .5;
+    const nearResistance = turning && Math.abs(result.levels.resistance.price - turning) <= (result.risk.atr20 || 0) * .5;
+    if (!nearSupport) add(result.levels.support.price,'#148c75','下方关注');
+    if (!nearResistance) add(result.levels.resistance.price,'#b25965','上方关注');
     add(result.risk.protective_reference,'#d4a64c','保护');
-    if (turning) add(turning,'#4b9fe4','转折参照',1);
+    if (turning) add(turning,'#4b9fe4','趋势关键价',1);
     const primary = result.patterns.find(p => p.status === '已确认');
     if (primary) add(primary.trigger,'#638dff','形态突破',0);
     chart.timeScale().fitContent();
@@ -79,7 +80,7 @@
       return `<article class="pattern-card ${p.direction === 'up' ? 'up' : p.direction === 'down' ? 'down' : ''}">
         <div class="card-top"><h3>${esc(p.name)}</h3><span class="status-pill ${p.status==='已确认'?'confirmed':''}">${esc(p.status)}</span></div>
         <p>${esc(description)}</p>
-        <div class="numbers"><div><small>突破界线</small><strong>${fmt(p.trigger)}</strong></div><div><small>幅度测算位</small><strong>${p.measured_target == null ? '—' : fmt(p.measured_target)}</strong></div></div>
+        <div class="numbers"><div><small>确认走势要看的价</small><strong>${fmt(p.trigger)}</strong></div><div><small>图形参考价</small><strong>${p.measured_target == null ? '—' : fmt(p.measured_target)}</strong></div></div>
         <div class="card-foot">${esc(p.start_date)} — ${esc(p.end_date)} · 第 ${p.book_chapters.join('、')} 章 · ${esc(p.target_state)}${esc(warning)}</div>
       </article>`;
     }).join('');
@@ -91,27 +92,28 @@
     $('events').innerHTML = events.length ? events.slice(0,4).map(event => `<div class="event-row ${event.direction==='up'?'up':'down'}"><div><strong>${esc(event.type)}</strong><span>${esc(event.date)} · ${esc(event.context)}</span></div><div class="event-state"><strong>${esc(event.status)}</strong><small>${event.magnitude_pct == null ? '' : `区间 ${fmt(event.magnitude_pct)}%`}</small></div></div>`).join('') : '<div class="empty-card">近 45 根 K 线未出现满足条件的缺口或关键反转日候选。</div>';
   }
 
-  function renderBuyScore(result) {
-    const reference = result.buy_reference;
-    const score = reference?.score;
+  function renderTrendOutlook(result) {
+    const outlook = result.trend_outlook;
+    const score = outlook?.confidence_score;
+    $('trend-outlook-card').dataset.direction = outlook?.direction || 'unclear';
+    $('trend-current').textContent = outlook?.current || '暂时无法判断走势';
     $('buy-score').textContent = score == null ? '—' : String(score);
-    document.querySelector('.buy-score-number span').textContent = '/ 100';
-    $('buy-score-label').textContent = reference?.label || '暂时无法计算';
+    $('buy-score-label').textContent = score == null ? '等待新的价格数据' : score === 0 ? '目前缺少可以延续的明确方向' : outlook.direction.endsWith('_lean') ? '已有方向线索，但近期趋势尚未确认' : '分数越低，原方向越需要重新确认';
     $('buy-score-fill').style.width = `${score == null ? 0 : score}%`;
     document.querySelector('.buy-score-track').style.display = score == null ? 'none' : '';
-    $('buy-score-fill').className = '';
-    const level = reference?.turning_level;
-    $('buy-validation').classList.toggle('breached', Boolean(level && reference.distance_pct <= 0));
+    $('trend-why').textContent = outlook?.why || '暂无判断依据。';
+    $('trend-next').textContent = outlook?.expected || '等待更多价格数据。';
+    $('trend-watch').textContent = outlook?.watch || '暂无关键价';
+    $('trend-if-holds').textContent = outlook?.if_holds || '';
+    $('trend-if-breaks').textContent = outlook?.if_breaks || '';
+    const level = outlook?.reference;
     if (level) {
-      const distance = reference.distance_atr;
-      const relation = reference.distance_pct <= 0 ? '已触及或跌破' : '高于';
-      const distanceText = distance == null ? 'ATR 暂不可用' : `${fmt(Math.abs(distance))} 个 ATR`;
-      $('buy-validation').innerHTML = `<strong>现价${relation}转折参照位 ${distanceText}</strong><span>${esc(level.kind)} ${fmt(level.price)}${level.date ? ` · ${esc(level.date)}` : ''}；现价 ${fmt(result.last.close)}。价格越接近这道线，距离分越低。</span><span>四项上升结构条件符合 ${reference.conditions_met}/${reference.conditions_total}，结构上限 ${reference.structure_ceiling} 分；价格缓冲 ${reference.cushion_score == null ? '—' : reference.cushion_score} 分；最终取较低者。</span>${reference.line_note ? `<small>${esc(reference.line_note)}</small>` : ''}`;
+      $('buy-validation').textContent = `现价 ${fmt(result.last.close)}；关键价 ${fmt(level.price)}（${level.kind}）。四项条件给出最高 ${outlook.structure_ceiling} 分，价格与关键价的距离给出 ${outlook.cushion_score == null ? '—' : outlook.cushion_score} 分，取较低者。`;
     } else {
-      $('buy-validation').textContent = '缺少转折参照位，无法计算距离。';
+      $('buy-validation').textContent = score == null ? '行情或波动数据不足，暂时不能计算。' : '高点和低点还没有形成一致方向，因此没有明确的单边走势可以延续。';
     }
-    $('buy-score-parts').innerHTML = (reference?.parts || []).map(part => `<div class="score-part ${part.met ? 'met' : 'unmet'}"><div><span>${esc(part.label)}</span><strong>${part.met ? '符合' : '未满足'}</strong></div><small>${esc(part.reason)}</small></div>`).join('');
-    $('buy-score-note').textContent = `截至 ${reference?.as_of || result.last.date} · ${reference?.note || ''}`;
+    $('buy-score-parts').innerHTML = (outlook?.parts || []).map(part => `<div class="score-part ${part.met ? 'met' : 'unmet'}"><div><span>${esc(part.label)}</span><strong>${part.met ? '符合' : '未满足'}</strong></div>${part.reason ? `<small>${esc(part.reason)}</small>` : ''}</div>`).join('');
+    $('buy-score-note').textContent = `截至 ${outlook?.as_of || result.last.date} · ${outlook?.confidence_meaning || '这是图形规则的判断分，不是未来涨跌概率。'}`;
   }
 
   function render(result) {
@@ -128,21 +130,21 @@
     $('bar-count').textContent = `${result.last.bar_count} 根`;
     $('volume-ratio').textContent = result.last.volume_ratio_20 == null ? '无数据' : `${fmt(result.last.volume_ratio_20)} ×`;
     $('data-source').textContent = `${result.source.provider} · 非实时`;
-    $('summary').textContent = result.summary;
-    const direction = result.trend.direction;
-    $('trend-badge').textContent = direction + (result.trend.trendline?.broken ? ` · ${result.trend.trendline.quality}穿透` : '');
-    $('trend-badge').className = `trend-badge ${direction === '上升趋势' ? 'up' : direction === '下降趋势' ? 'down' : ''}`;
+    $('summary').textContent = result.trend_outlook.summary;
+    const direction = result.trend_outlook.direction;
+    $('trend-badge').textContent = direction === 'up' ? (result.trend_outlook.confidence_score === 0 ? '上涨转弱' : '偏上涨') : direction === 'down' ? (result.trend_outlook.confidence_score === 0 ? '下跌转弱' : '偏下跌') : direction === 'up_lean' ? '偏强整理' : direction === 'down_lean' ? '偏弱整理' : direction === 'stale' ? '行情待更新' : '方向不明';
+    $('trend-badge').className = `trend-badge ${direction === 'up' || direction === 'up_lean' ? 'up' : direction === 'down' || direction === 'down_lean' ? 'down' : ''}`;
     const level = result.levels;
-    $('levels').innerHTML = `<div class="level-row"><span>上方阻力<br><small>${esc(level.resistance.method)}</small></span><strong class="negative">${fmt(level.resistance.price)}</strong></div><div class="level-row"><span>下方支撑<br><small>${esc(level.support.method)}</small></span><strong class="positive">${fmt(level.support.price)}</strong></div>`;
+    $('levels').innerHTML = `<div class="level-row"><span>上方关注价</span><strong class="negative">${fmt(level.resistance.price)}</strong></div><div class="level-row"><span>下方关注价</span><strong class="positive">${fmt(level.support.price)}</strong></div>`;
     const risk = result.risk;
-    $('risk').innerHTML = `<div class="risk-value">${fmt(risk.protective_reference)}</div><small>${esc(risk.method)} · 距现价 ${fmt(risk.distance_pct)}%</small><small>ATR 20 ${fmt(risk.atr20)} · 2× ATR 幅度 ${fmt(risk.atr20_x2_distance)}</small>${risk.position_sizing ? `<small>风险预算 ${fmt(risk.position_sizing.risk_budget)} · 风险上限 ${risk.position_sizing.max_shares_by_risk} 股</small>` : ''}`;
+    $('risk').innerHTML = `<div class="risk-value">${fmt(risk.protective_reference)}</div><small>距离现价约 ${fmt(risk.distance_pct)}% · 来源：${esc(risk.method)}</small><small>最近 20 期的平均波动幅度约 ${fmt(risk.atr20)}</small>${risk.position_sizing ? `<small>按所填资金计算的数量上限：${risk.position_sizing.max_shares_by_risk} 股</small>` : ''}`;
     const ladder = risk.basis_ladder;
     $('ladder-summary').textContent = ladder ? `假设 ${ladder.entry_date} 收盘入场 · 波谷法 ${fmt(ladder.variant1.stop)}${ladder.variant1.triggered_date ? `（${ladder.variant1.triggered_date} 触及）` : ''} · 新高增强法 ${fmt(ladder.variant2.stop)}${ladder.variant2.triggered_date ? `（${ladder.variant2.triggered_date} 触及）` : ''}。穿越价并非成交价。` : '选择历史建仓日后，展示两种基准点保护路径。仅作规则演示。';
     $('warnings').innerHTML = result.warnings.length ? result.warnings.map(w => `<div class="warning-item">${esc(w)}</div>`).join('') : '<div class="warning-item">数据时点正常；仍需留意假突破和复权价格差异。</div>';
     updateLegend(result.bars.at(-1));
     renderPatterns(result);
     renderEvents(result);
-    renderBuyScore(result);
+    renderTrendOutlook(result);
     drawChart(result);
   }
 
@@ -155,13 +157,19 @@
     $('run-replay').disabled = false;
     $('replay-results').textContent = '点击“查看历史”，了解这些图形过去出现后的股价变化。';
     $('buy-score').textContent = '—';
-    document.querySelector('.buy-score-number span').textContent = '/ 100';
+    $('trend-outlook-card').dataset.direction = 'unclear';
+    $('trend-current').textContent = '正在判断当前走势…';
     document.querySelector('.buy-score-track').style.display = 'none';
-    $('buy-score-label').textContent = '正在检查当前趋势结构…';
+    $('buy-score-label').textContent = '正在读取最近的价格变化…';
     $('buy-score-parts').innerHTML = '';
     $('buy-validation').textContent = '';
     $('buy-score-fill').style.width = '0%';
-    $('buy-score-note').textContent = '正在计算当前价格与转折参照位的距离。';
+    $('trend-why').textContent = '正在读取价格…';
+    $('trend-next').textContent = '正在分析后续走势…';
+    $('trend-watch').textContent = '正在找关键价…';
+    $('trend-if-holds').textContent = '';
+    $('trend-if-breaks').textContent = '';
+    $('buy-score-note').textContent = '这是当前图形的判断分，不是未来涨跌概率。';
     $('summary').textContent = '正在获取历史价格并匹配书籍规则…';
     $('ticker-meta').textContent = '正在获取历史日线…';
     const params = new URLSearchParams({symbol:state.symbol,period:state.period,interval:state.interval});

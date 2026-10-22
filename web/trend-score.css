@@ -11,6 +11,27 @@
   line-height: 1.55;
 }
 
+.buy-score-card[data-direction="up"] { border-color: #28745f; }
+.buy-score-card[data-direction="up_lean"] { border-color: #395f67; }
+.buy-score-card[data-direction="down"] { border-color: #8b4852; }
+.buy-score-card[data-direction="down_lean"] { border-color: #755461; }
+.buy-score-card[data-direction="unclear"] { border-color: #4e6076; }
+.buy-score-card[data-direction="down"] #buy-score-fill { background: linear-gradient(90deg, #d48768, #e06374); }
+.buy-score-card[data-direction="down_lean"] #buy-score-fill { background: linear-gradient(90deg, #d48768, #e06374); }
+.buy-score-card[data-direction="unclear"] #buy-score-fill { background: #748ca8; }
+.buy-score-number { flex-direction: column; align-items: flex-end; gap: 3px; }
+.buy-score-number span { font-size: 10px; }
+.trend-story { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 15px 0 12px; }
+.trend-story > div { padding: 12px 13px; border: 1px solid #34475d; border-radius: 7px; background: #142334; }
+.trend-story span { color: #96b3d0; font-size: 10px; font-weight: 750; }
+.trend-story p { margin: 7px 0 0; color: #e3edf9; font-size: 13px; line-height: 1.55; }
+.trend-watch { padding: 12px 13px; border-left: 3px solid #5b97dc; background: #172a3c; border-radius: 3px 7px 7px 3px; }
+.trend-watch strong { display: block; color: #d8eaff; font-size: 12px; margin-bottom: 7px; }
+.trend-watch p { margin: 4px 0; color: #b9cfe4; font-size: 11px; line-height: 1.55; }
+.trend-details { margin-top: 12px; }
+.trend-details summary { color: #98b4d2; cursor: pointer; font-size: 11px; font-weight: 700; }
+.trend-details .buy-validation { margin: 11px 0 9px; }
+.trend-details .buy-score-parts { margin-top: 8px; }
 .buy-validation strong { font-size: 12px; color: #e2f2ff; }
 .buy-validation small { color: #91adc7; font-size: 10px; }
 .score-subhead {
@@ -30,4 +51,9 @@
 
 @media (max-width: 900px) {
   .buy-score-parts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 700px) {
+  .trend-story { grid-template-columns: 1fr; }
+  .buy-score-number span { font-size: 9px; }
 }
