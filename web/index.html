@@ -7,7 +7,7 @@
   <title>Trend Atlas · 股市趋势技术分析</title>
   <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="/assets/style.css">
-  <link rel="stylesheet" href="/assets/calibration.css">
+  <link rel="stylesheet" href="/assets/trend-score.css">
 </head>
 <body>
   <div class="app-shell">
@@ -16,7 +16,7 @@
       <button class="rail-icon active" title="图表" aria-label="图表">▥</button>
       <button class="rail-icon" id="rail-rules" title="规则" aria-label="规则">≡</button>
       <div class="rail-spacer"></div>
-      <div class="rail-footer">ATLAS<br><span>v1.4</span></div>
+      <div class="rail-footer">ATLAS<br><span>v1.5</span></div>
     </aside>
 
     <div class="workspace">
@@ -37,7 +37,7 @@
             <div class="last-price"><strong id="last-price">—</strong><span id="last-change">—</span></div>
           </div>
 
-          <section class="buy-score-card" aria-label="当前买入评估"><div class="buy-score-top"><div><div class="eyebrow">BUY ASSESSMENT / VALIDATION</div><h2>当前买入评估</h2><p id="buy-score-label">正在核对历史数据…</p></div><div class="buy-score-number"><strong id="buy-score">—</strong><span>/ 100</span></div></div><div class="buy-score-track"><div id="buy-score-fill"></div></div><div id="buy-validation" class="buy-validation"></div><div class="score-subhead">旧规则拆解 · 仅供检查</div><div id="buy-score-parts" class="buy-score-parts"></div><p id="buy-score-note" class="mini-note">正在检查历史检验结果。</p></section>
+          <section class="buy-score-card" aria-label="上升趋势确信度"><div class="buy-score-top"><div><div class="eyebrow">UPTREND / STRUCTURAL CONFIDENCE</div><h2>上升趋势确信度</h2><p id="buy-score-label">正在检查趋势结构…</p></div><div class="buy-score-number"><strong id="buy-score">—</strong><span>/ 100</span></div></div><div class="buy-score-track"><div id="buy-score-fill"></div></div><div id="buy-validation" class="buy-validation"></div><div class="score-subhead">当前结构 · 逐项核对</div><div id="buy-score-parts" class="buy-score-parts"></div><p id="buy-score-note" class="mini-note">只衡量当前上升趋势的结构与转折位距离。</p></section>
 
           <div class="chart-card">
             <div class="chart-toolbar">
@@ -78,7 +78,7 @@
           <div class="panel-block"><div class="block-label">01 / 核心观察</div><p id="summary" class="summary">正在读取数据并匹配书中的规则…</p><div id="trend-badge" class="trend-badge">等待分析</div></div>
           <div class="panel-block"><div class="block-label">02 / 量价核验</div><div class="stat-row"><span>最近一期相对成交量</span><strong id="volume-ratio">—</strong></div><div class="stat-row"><span>最近 K 线</span><strong id="bar-count">—</strong></div><div class="stat-row"><span>K 线日期标签</span><strong id="as-of">—</strong></div><p class="panel-hint">向上突破须有成交量配合；向下突破可先由价格确认。第 6–8 章</p></div>
           <div class="panel-block"><div class="block-label">03 / 假设建仓日 · 第 28 章</div><form id="entry-form" class="entry-form"><input id="entry-date" type="date" aria-label="假设建仓日期"><button type="submit">计算动态保护</button></form><p id="ladder-summary" class="panel-hint">选择历史建仓日后，展示两种基准点保护路径。仅作规则演示。</p></div>
-          <div class="panel-block"><div class="block-label">04 / 本次测算股票</div><div class="watchlist"><button data-symbol="VOO">VOO <span>S&amp;P 500 ETF</span></button><button data-symbol="QQQ">QQQ <span>Nasdaq 100 ETF</span></button><button data-symbol="NVDA">NVDA <span>Nvidia</span></button><button data-symbol="MU">MU <span>Micron</span></button></div></div>
+          <div class="panel-block"><div class="block-label">04 / 观察清单</div><div class="watchlist"><button data-symbol="VOO">VOO <span>S&amp;P 500 ETF</span></button><button data-symbol="QQQ">QQQ <span>Nasdaq 100 ETF</span></button><button data-symbol="NVDA">NVDA <span>Nvidia</span></button><button data-symbol="MU">MU <span>Micron</span></button></div></div>
           <div class="panel-block"><div class="block-label">05 / 数据与限制</div><div id="warnings" class="warnings"></div><p class="panel-hint">形态目标是几何测算，不是未来价格的概率预测。实际投资还需核查公司事件、流动性与组合风险。</p></div>
           <div class="panel-bottom">规则来自本地书籍摘要<br><span>所有结论均由确定性代码生成</span></div>
         </aside>
@@ -86,7 +86,7 @@
     </div>
   </div>
 
-  <dialog id="rules-dialog"><div class="dialog-head"><div><div class="eyebrow">METHODOLOGY</div><h2>规则怎么得出结论</h2></div><button id="close-rules" aria-label="关闭">×</button></div><ol><li>确认波峰、波谷需要右侧 3 根 K 线，避免未来函数。</li><li>用波峰与波谷判断趋势，并连接两个转折点绘制趋势线。</li><li>匹配头肩、双重顶底、三重顶底、三角形、箱体和楔形。</li><li>形态收盘穿透约 3% 才确认；向上突破还须达到过去 20 期均量的 1.5 倍（工程阈值）。</li><li>记录真实价格区间缺口和关键反转日候选；缺口类别需后续价格与原始报价核验。</li><li>输出保护参考、20 期 ATR；提供历史建仓日时再计算动态止损示例。</li></ol><p>原书章节、公式和未覆盖项请见项目中的 KNOWLEDGE.md 与 COVERAGE.md。</p></dialog>
+  <dialog id="rules-dialog"><div class="dialog-head"><div><div class="eyebrow">METHODOLOGY</div><h2>规则怎么得出结论</h2></div><button id="close-rules" aria-label="关闭">×</button></div><ol><li>确认波峰、波谷需要右侧 3 根 K 线，避免未来函数。</li><li>用波峰与波谷判断趋势，并连接两个转折点绘制趋势线。</li><li>匹配头肩、双重顶底、三重顶底、三角形、箱体和楔形。</li><li>形态收盘穿透约 3% 才确认；向上突破还须达到过去 20 期均量的 1.5 倍（工程阈值）。</li><li>上升趋势确信度检查波峰、波谷和两项均线关系；当前价越接近最近确认波谷或有效趋势线，分数越低。它不是未来上涨概率。</li><li>记录真实价格区间缺口和关键反转日候选；缺口类别需后续价格与原始报价核验。</li><li>输出保护参考、20 期 ATR；提供历史建仓日时再计算动态止损示例。</li></ol><p>原书章节、公式和未覆盖项请见项目中的 KNOWLEDGE.md 与 COVERAGE.md。</p></dialog>
   <div id="toast" role="status" aria-live="polite"></div>
   <script src="/assets/vendor/lightweight-charts.js"></script>
   <script src="/assets/app.js"></script>

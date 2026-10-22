@@ -1,0 +1,33 @@
+.buy-validation {
+  display: grid;
+  gap: 6px;
+  padding: 11px 13px;
+  margin-bottom: 13px;
+  border: 1px solid #395571;
+  background: #172b3b;
+  border-radius: 6px;
+  color: #c5d9e9;
+  font-size: 11px;
+  line-height: 1.55;
+}
+
+.buy-validation strong { font-size: 12px; color: #e2f2ff; }
+.buy-validation small { color: #91adc7; font-size: 10px; }
+.score-subhead {
+  color: #8ca3bc;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .06em;
+  margin-bottom: 8px;
+}
+
+.buy-validation.breached { border-color: #8b4852; background: #32242e; }
+.buy-validation.breached strong { color: #ffabb3; }
+.buy-score-parts { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.score-part.met strong { color: #39cda4; }
+.score-part.unmet strong { color: #e5aab1; }
+#buy-score-fill { background: linear-gradient(90deg, #4c8be5, #30cba5); }
+
+@media (max-width: 900px) {
+  .buy-score-parts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}

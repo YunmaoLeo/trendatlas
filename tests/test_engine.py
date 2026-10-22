@@ -6,6 +6,7 @@ from stocktrend.engine import _pivots, analyze
 from stocktrend.portfolio import assess
 from stocktrend.replay import replay
 from stocktrend.score import buy_reference
+from stocktrend.legacy_score import buy_reference as legacy_buy_reference
 
 
 def bars_from_points(points, volume=1000):
@@ -125,7 +126,45 @@ class EngineTest(unittest.TestCase):
         self.assertEqual({issue["code"] for issue in audit["issues"]},
                          {"zero_volume", "large_close_move"})
 
-    def test_buy_reference_is_explainable_and_stale_aware(self):
+    def test_uptrend_confidence_falls_near_turning_level(self):
+        analysis = {"last": {"date": date.today().isoformat(), "close": 110},
+                    "trend": {"direction": "上升趋势", "trendline": {
+                        "to_price": 108, "touches": 2}},
+                    "pivots": [{"kind": "H", "date": "2026-01-01", "price": 100},
+                               {"kind": "L", "date": "2026-01-03", "price": 90},
+                               {"kind": "H", "date": "2026-01-05", "price": 110},
+                               {"kind": "L", "date": "2026-01-07", "price": 99}],
+                    "indicators": {"ma50": [{"value": 95}], "ma200": [{"value": 90}]},
+                    "levels": {"support": {"price": 90}},
+                    "risk": {"atr20": 5}, "source": {"interval": "1d"}}
+        far = buy_reference(analysis)
+        self.assertEqual(far["score"], 69)
+        self.assertEqual(far["turning_level"]["price"], 99)
+        analysis["last"]["close"] = 102
+        near = buy_reference(analysis)
+        self.assertEqual(near["score"], 38)
+        self.assertLess(near["score"], far["score"])
+        analysis["last"]["close"] = 98
+        self.assertEqual(buy_reference(analysis)["score"], 0)
+
+    def test_validated_line_can_be_closest_turning_level(self):
+        analysis = {"last": {"date": date.today().isoformat(), "close": 110},
+                    "trend": {"direction": "上升趋势", "trendline": {
+                        "to_price": 108, "touches": 3}},
+                    "pivots": [{"kind": "H", "date": "2026-01-01", "price": 100},
+                               {"kind": "L", "date": "2026-01-03", "price": 90},
+                               {"kind": "H", "date": "2026-01-05", "price": 110},
+                               {"kind": "L", "date": "2026-01-07", "price": 99}],
+                    "indicators": {"ma50": [{"value": 95}], "ma200": [{"value": 90}]},
+                    "levels": {"support": {"price": 90}},
+                    "risk": {"atr20": 5}, "source": {"interval": "1d"}}
+        reference = buy_reference(analysis)
+        self.assertEqual(reference["turning_level"]["price"], 108)
+        self.assertEqual(reference["score"], 29)
+        analysis["last"]["date"] = (date.today() - timedelta(days=10)).isoformat()
+        self.assertIsNone(buy_reference(analysis)["score"])
+
+    def test_legacy_score_stays_available_for_research_reproduction(self):
         analysis = {"last": {"date": date.today().isoformat(), "close": 100, "volume_ratio_20": 1.6},
                     "trend": {"direction": "上升趋势"},
                     "patterns": [{"name": "双重底", "status": "已确认", "direction": "up", "target_state": "未触及"}],
@@ -133,17 +172,7 @@ class EngineTest(unittest.TestCase):
                     "levels": {"resistance": {"price": 130, "method": "确认波段聚类 ±2%"}},
                     "risk": {"protective_reference": 90, "distance_pct": 10},
                     "source": {"interval": "1d"}}
-        strong = buy_reference(analysis)
-        self.assertIsNone(strong["score"])
-        self.assertEqual(strong["experimental_score"], 100)
-        self.assertEqual(sum(part["points"] for part in strong["parts"]), strong["experimental_score"])
-        analysis["trend"]["direction"] = "下降趋势"
-        analysis["patterns"] = [{"name": "双重顶", "status": "已确认", "direction": "down"}]
-        analysis["levels"]["resistance"]["price"] = 101
-        weak = buy_reference(analysis)
-        self.assertLess(weak["experimental_score"], strong["experimental_score"])
-        analysis["last"]["date"] = (date.today() - timedelta(days=10)).isoformat()
-        self.assertIsNone(buy_reference(analysis)["score"])
+        self.assertEqual(legacy_buy_reference(analysis)["experimental_score"], 100)
 
 
 if __name__ == "__main__":

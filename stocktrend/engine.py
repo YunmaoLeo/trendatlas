@@ -596,7 +596,7 @@ def analyze(bars: list[dict], symbol: str, source: dict | None = None,
     if risk["basis_date"] and (date.fromisoformat(bars[-1]["date"]) - date.fromisoformat(risk["basis_date"])).days > 60:
         warnings.append("最近确认波谷距今超过 60 天；保护参考位可能已不适合短线决策")
     result = {
-        "schema_version": "1.1", "symbol": symbol, "source": source or {"provider": "supplied bars", "as_of": bars[-1]["date"]},
+        "schema_version": "1.2", "symbol": symbol, "source": source or {"provider": "supplied bars", "as_of": bars[-1]["date"]},
         "summary": interpretation, "last": {"date": bars[-1]["date"], "close": _round(close),
             "change_pct": _round(_pct(close, bars[-2]["close"])), "volume_ratio_20": _round(volume_ratio),
             "bar_count": len(bars)},
@@ -607,7 +607,7 @@ def analyze(bars: list[dict], symbol: str, source: dict | None = None,
         "bars": [{**bar, "open": _round(bar["open"]), "high": _round(bar["high"]),
                   "low": _round(bar["low"]), "close": _round(bar["close"])} for bar in bars],
         "warnings": warnings,
-        "method": {"book": "《股市趋势技术分析》原书第 10 版", "rules_version": "1.1", "breakout_close_pct": 3,
+        "method": {"book": "《股市趋势技术分析》原书第 10 版", "rules_version": "1.2", "breakout_close_pct": 3,
                    "up_volume_ratio": UP_VOLUME, "pivot_radius": PIVOT_RADIUS,
                    "note": "量化阈值中部分为工程选择；详见 KNOWLEDGE.md。测算目标为形态幅度，不是价格预测。"},
     }

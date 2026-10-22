@@ -17,6 +17,7 @@ from statistics import mean, median
 
 from .data import audit_bars, from_yfinance
 from .engine import analyze
+from .legacy_score import buy_reference as legacy_buy_reference
 from .replay import replay
 
 FEATURES = ("trend", "confirmed_pattern", "averages", "volume", "room_to_risk")
@@ -57,8 +58,8 @@ def sample(bars: list[dict], symbol: str, horizon: int, warmup: int = 200) -> li
         future = bars[index + horizon]
         forward_return = future["close"] / bars[index]["close"] - 1
         observations.append({"symbol": symbol, "date": bars[index]["date"], "end_date": future["date"],
-                             "features": conditions(snapshot), "old_score": sum(
-                                 p["points"] for p in snapshot["buy_reference"]["parts"]),
+                             "features": conditions(snapshot),
+                             "old_score": legacy_buy_reference(snapshot)["experimental_score"],
                              "return": forward_return, "up": int(forward_return > 0)})
     return observations
 
