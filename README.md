@@ -4,14 +4,7 @@
 
 ## 运行
 
-```bash
-cd /Users/lejieliu/Documents/stocks/stocktrend-lab
-python3 -m venv .venv
-.venv/bin/pip install -r requirements.txt
-.venv/bin/uvicorn stocktrend.api:app --host 127.0.0.1 --port 8000
-```
-
-打开 [本地界面](http://127.0.0.1:8000)。图表库已包含在 `web/vendor/`，浏览器不需要 CDN。界面使用深色金融终端风格和 TradingView 开源 Lightweight Charts 图表组件，图表下方保留组件来源署名。
+安装、启动和停止命令见 [启动说明](./START.md)。默认启动地址为 [http://127.0.0.1:8001](http://127.0.0.1:8001)。图表库已包含在 `web/vendor/`，浏览器不需要 CDN。界面使用深色金融终端风格和 TradingView 开源 Lightweight Charts 图表组件，图表下方保留组件来源署名。
 
 ## Coding agent 调用
 
