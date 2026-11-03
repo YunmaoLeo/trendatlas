@@ -49,6 +49,18 @@
 .score-part.unmet strong { color: #e5aab1; }
 #buy-score-fill { background: linear-gradient(90deg, #4c8be5, #30cba5); }
 
+.forecast-box { border: 1px solid #4b6684; border-left: 4px solid #789cce; border-radius: 7px; background: #14273a; padding: 13px 15px; }
+.forecast-box[data-direction="up"],.forecast-box[data-direction="up_range"] { border-left-color: #28c79a; }
+.forecast-box[data-direction="down"],.forecast-box[data-direction="down_range"] { border-left-color: #ef7180; }
+.forecast-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.forecast-head span { color: #9db9d7; font-size: 10px; font-weight: 800; letter-spacing: .04em; }
+.forecast-head strong { color: #eaf4ff; font-size: 16px; }
+.forecast-box[data-direction="up"] .forecast-head strong,.forecast-box[data-direction="up_range"] .forecast-head strong { color: #8be7cb; }
+.forecast-box[data-direction="down"] .forecast-head strong,.forecast-box[data-direction="down_range"] .forecast-head strong { color: #ffabb5; }
+.forecast-box p { margin: 8px 0 9px; color: #e1ebf7; font-size: 13px; line-height: 1.5; }
+.forecast-box small { display: block; color: #a9bed5; font-size: 10px; line-height: 1.55; margin-top: 4px; }
+.forecast-box #forecast-note { color: #8b9fb8; margin-top: 8px; }
+
 .trend-eval { margin: 15px 0 12px; padding: 13px; border: 1px solid #395571; border-radius: 7px; background: #142334; }
 .trend-eval > strong { display: block; color: #e2f2ff; font-size: 12px; }
 .trend-eval p { margin: 7px 0 0; color: #a9bfd7; line-height: 1.55; }
@@ -63,6 +75,7 @@
 
 @media (max-width: 700px) {
   .trend-story { grid-template-columns: 1fr; }
+  .forecast-head { flex-direction: column; gap: 5px; }
   .buy-score-number span { font-size: 9px; }
   .trend-eval-grid { grid-template-columns: 1fr; }
 }

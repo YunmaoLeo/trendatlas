@@ -7,7 +7,7 @@
   <title>Trend Atlas · 股市趋势技术分析</title>
   <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="/assets/style.css">
-  <link rel="stylesheet" href="/assets/trend-score.css?v=1.7.0">
+  <link rel="stylesheet" href="/assets/trend-score.css?v=1.8.0">
 </head>
 <body>
   <div class="app-shell">
@@ -16,7 +16,7 @@
       <button class="rail-icon active" title="图表" aria-label="图表">▥</button>
       <button class="rail-icon" id="rail-rules" title="规则" aria-label="规则">≡</button>
       <div class="rail-spacer"></div>
-      <div class="rail-footer">ATLAS<br><span>v1.7</span></div>
+      <div class="rail-footer">ATLAS<br><span>v1.8</span></div>
     </aside>
 
     <div class="workspace">
@@ -37,7 +37,7 @@
             <div class="last-price"><strong id="last-price">—</strong><span id="last-change">—</span></div>
           </div>
 
-          <section class="buy-score-card" id="trend-outlook-card" aria-label="当前趋势判断"><div class="buy-score-top"><div><div class="eyebrow">CURRENT TREND / WHAT TO WATCH</div><h2 id="trend-current">正在判断当前走势…</h2><p id="buy-score-label">根据目前图形判断，后续需要继续观察。</p></div><div class="buy-score-number"><strong id="buy-score">—</strong><span>当前图形结构分 / 100</span></div></div><div class="buy-score-track"><div id="buy-score-fill"></div></div><div class="trend-story"><div><span>为什么这样看</span><p id="trend-why">正在读取价格…</p></div><div><span>后续要观察什么</span><p id="trend-next">正在整理观察条件…</p></div></div><div class="trend-watch"><strong id="trend-watch">正在找关键价…</strong><p id="trend-if-holds"></p><p id="trend-if-breaks"></p></div><details class="trend-details"><summary>分数和依据怎么看？</summary><div id="buy-validation" class="buy-validation"></div><div id="buy-score-parts" class="buy-score-parts"></div></details><p id="buy-score-note" class="mini-note">分数只描述当前图形；历史检查未证明它能预测未来方向。</p></section>
+          <section class="buy-score-card" id="trend-outlook-card" aria-label="当前趋势判断"><div class="buy-score-top"><div><div class="eyebrow">CURRENT TREND / WHAT TO WATCH</div><h2 id="trend-current">正在判断当前走势…</h2><p id="buy-score-label">根据目前图形判断，后续需要继续观察。</p></div><div class="buy-score-number"><strong id="buy-score">—</strong><span>当前结构分 / 100 · 不是置信度</span></div></div><div class="buy-score-track"><div id="buy-score-fill"></div></div><div class="forecast-box" id="forecast-box" data-direction="unavailable"><div class="forecast-head"><span id="forecast-horizon">未来走势 · 基准情景</span><strong id="forecast-label">正在整理预期…</strong></div><p id="forecast-summary">正在读取价格…</p><small id="forecast-reason"></small><small id="forecast-reconsider"></small><small id="forecast-note">预测是情景判断，不是上涨概率。</small></div><div class="trend-story"><div><span>为什么这样看</span><p id="trend-why">正在读取价格…</p></div><div><span>后续要观察什么</span><p id="trend-next">正在整理观察条件…</p></div></div><div class="trend-watch"><strong id="trend-watch">正在找关键价…</strong><p id="trend-if-holds"></p><p id="trend-if-breaks"></p></div><details class="trend-details"><summary>分数和依据怎么看？</summary><div id="buy-validation" class="buy-validation"></div><div id="buy-score-parts" class="buy-score-parts"></div></details><p id="buy-score-note" class="mini-note">分数只描述当前图形；历史检查未证明它能预测未来方向。</p></section>
 
           <div class="chart-card">
             <div class="chart-toolbar">
@@ -86,9 +86,9 @@
     </div>
   </div>
 
-  <dialog id="rules-dialog"><div class="dialog-head"><div><div class="eyebrow">METHODOLOGY</div><h2>趋势判断怎么来的？</h2></div><button id="close-rules" aria-label="关闭">×</button></div><ol><li>先找最近几次明确的高点和低点。两者都逐步抬高，判断偏上涨；都逐步降低，判断偏下跌。</li><li>再看价格是否靠近会改变判断的关键价。越靠近，当前图形的结构分越低。</li><li>分数还参考价格与近 50 期、200 期平均价的关系；具体条件可在趋势卡片里展开。</li><li>如果高点和低点给出的方向不一致，就先写“方向不明”，等价格走出目前的范围。</li><li>图形突破通常要看收盘价是否明显越过边界。向上突破还要结合成交量。</li></ol><p>分数只描述当前图形，不是未来方向的置信概率。历史对照目前未显示稳定预测优势；原书依据和工程参数见项目 KNOWLEDGE.md。</p></dialog>
+  <dialog id="rules-dialog"><div class="dialog-head"><div><div class="eyebrow">METHODOLOGY</div><h2>趋势判断怎么来的？</h2></div><button id="close-rules" aria-label="关闭">×</button></div><ol><li>先找最近几次明确的高点和低点。两者都逐步抬高，判断偏上涨；都逐步降低，判断偏下跌。</li><li>再看价格是否靠近会改变判断的关键价。越靠近，当前图形的结构分越低。</li><li>分数还参考价格与近 50 期、200 期平均价的关系；具体条件可在趋势卡片里展开。</li><li>未来走势的基准预测另看当前方向、50 期均价与最近 20 根日线或 8 根周线的涨跌；三者不一致时只写震荡。</li><li>图形突破通常要看收盘价是否明显越过边界。向上突破还要结合成交量。</li></ol><p>分数只描述当前图形，不是未来方向的置信概率。基准预测也未经样本外验证；原书依据和工程参数见项目 KNOWLEDGE.md。</p></dialog>
   <div id="toast" role="status" aria-live="polite"></div>
   <script src="/assets/vendor/lightweight-charts.js"></script>
-  <script src="/assets/app.js?v=1.7.0"></script>
+  <script src="/assets/app.js?v=1.8.0"></script>
 </body>
 </html>

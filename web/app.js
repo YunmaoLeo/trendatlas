@@ -94,6 +94,7 @@
 
   function renderTrendOutlook(result) {
     const outlook = result.trend_outlook;
+    const forecast = result.trend_forecast;
     const score = outlook?.confidence_score;
     $('trend-outlook-card').dataset.direction = outlook?.direction || 'unclear';
     $('trend-current').textContent = outlook?.current || '暂时无法判断走势';
@@ -114,6 +115,13 @@
     }
     $('buy-score-parts').innerHTML = (outlook?.parts || []).map(part => `<div class="score-part ${part.met ? 'met' : 'unmet'}"><div><span>${esc(part.label)}</span><strong>${part.met ? '符合' : '未满足'}</strong></div>${part.reason ? `<small>${esc(part.reason)}</small>` : ''}</div>`).join('');
     $('buy-score-note').textContent = `截至 ${outlook?.as_of || result.last.date} · ${outlook?.confidence_meaning || '这是图形规则的判断分，不是未来涨跌概率。'}`;
+    $('forecast-box').dataset.direction = forecast?.direction || 'unavailable';
+    $('forecast-horizon').textContent = `${forecast?.horizon_label || '未来走势'} · 基准预测`;
+    $('forecast-label').textContent = forecast?.label || '暂不预测';
+    $('forecast-summary').textContent = forecast?.summary || '暂无足够的价格数据。';
+    $('forecast-reason').textContent = forecast?.reason || '';
+    $('forecast-reconsider').textContent = forecast?.reconsider_if ? `需要重判：${forecast.reconsider_if}` : '';
+    $('forecast-note').textContent = forecast?.validation || '预测是情景判断，不是未来方向的概率。';
   }
 
   function render(result) {
@@ -170,6 +178,13 @@
     $('trend-if-holds').textContent = '';
     $('trend-if-breaks').textContent = '';
     $('buy-score-note').textContent = '分数只描述当前图形；历史检查未证明它能预测未来方向。';
+    $('forecast-box').dataset.direction = 'unavailable';
+    $('forecast-horizon').textContent = '未来走势 · 基准预测';
+    $('forecast-label').textContent = '正在整理预期…';
+    $('forecast-summary').textContent = '正在读取价格…';
+    $('forecast-reason').textContent = '';
+    $('forecast-reconsider').textContent = '';
+    $('forecast-note').textContent = '预测是情景判断，不是上涨概率。';
     $('summary').textContent = '正在获取历史价格并匹配书籍规则…';
     $('ticker-meta').textContent = '正在获取历史日线…';
     const params = new URLSearchParams({symbol:state.symbol,period:state.period,interval:state.interval});

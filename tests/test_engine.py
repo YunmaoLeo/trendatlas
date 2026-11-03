@@ -3,6 +3,7 @@ from datetime import date, timedelta
 
 from stocktrend.data import audit_bars, normalize_symbol, validate_bars
 from stocktrend.engine import _pivots, analyze
+from stocktrend.forecast import trend_forecast
 from stocktrend.evaluate import evaluate_trend
 from stocktrend.portfolio import assess
 from stocktrend.replay import replay
@@ -124,7 +125,32 @@ class EngineTest(unittest.TestCase):
         historical = analyze(bars, "TEST", evaluation_date=date.fromisoformat(bars[-1]["date"]))
         self.assertEqual(old["trend_outlook"]["direction"], "stale")
         self.assertNotEqual(historical["trend_outlook"]["direction"], "stale")
+        self.assertEqual(old["trend_forecast"]["direction"], "unavailable")
+        self.assertNotEqual(historical["trend_forecast"]["direction"], "unavailable")
         self.assertNotIn("行情过期", " ".join(historical["warnings"]))
+
+    def test_forecast_needs_direction_ma_and_recent_move_to_agree(self):
+        analysis = {
+            "source": {"interval": "1d"}, "last": {"date": "2026-11-02", "close": 90},
+            "bars": [{"close": 100}] * 20 + [{"close": 90}],
+            "indicators": {"ma50": [{"value": 95}]},
+            "levels": {"support": {"price": 80}, "resistance": {"price": 110}},
+            "trend_outlook": {"direction": "down", "confidence_score": 75,
+                              "reference": {"price": 110},
+                              "if_breaks": "站回 110 后重判。", "if_holds": ""},
+        }
+        falling = trend_forecast(analysis)
+        self.assertEqual(falling["direction"], "down")
+        self.assertEqual(falling["watch_price"], 80)
+        analysis["trend_outlook"]["confidence_score"] = 0
+        self.assertEqual(trend_forecast(analysis)["direction"], "down")
+        analysis["bars"][0] = {"close": 85}
+        self.assertEqual(trend_forecast(analysis)["direction"], "range")
+        analysis["source"]["interval"] = "1wk"
+        analysis["bars"] = [{"close": 100}] * 8 + [{"close": 90}]
+        self.assertEqual(trend_forecast(analysis)["horizon_bars"], 8)
+        analysis["trend_outlook"]["direction"] = "stale"
+        self.assertEqual(trend_forecast(analysis)["direction"], "unavailable")
 
     def test_trend_evaluation_windows_do_not_overlap_or_read_future(self):
         bars = bars_from_points([(0, 100), (100, 120), (200, 145), (280, 130)])
