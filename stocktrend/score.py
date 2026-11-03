@@ -10,7 +10,7 @@ from __future__ import annotations
 from datetime import date
 
 
-def buy_reference(analysis: dict) -> dict:
+def buy_reference(analysis: dict, evaluation_date: date | None = None) -> dict:
     """Measure swing/MA agreement and the volatility-scaled reversal cushion.
 
     Four binary tests set a ceiling of 0, 25, 50, 75, or 100. The distance from
@@ -75,7 +75,7 @@ def buy_reference(analysis: dict) -> dict:
 
     interval = analysis.get("source", {}).get("interval", "1d")
     max_age = 21 if interval == "1wk" else 7
-    age = (date.today() - date.fromisoformat(analysis["last"]["date"])).days
+    age = ((evaluation_date or date.today()) - date.fromisoformat(analysis["last"]["date"])).days
     if age > max_age:
         score = None
         label = "行情过期，无法评估当前趋势"

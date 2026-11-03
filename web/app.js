@@ -69,7 +69,7 @@
   }
 
   function renderPatterns(result) {
-    $('pattern-count').textContent = `${result.patterns.length} 个匹配 · 仅显示完整结构`;
+    $('pattern-count').textContent = `${result.patterns.length} 个图形匹配 · 后续方向未验证`;
     if (!result.patterns.length) {
       $('patterns').innerHTML = '<div class="empty-card">当前窗口没有满足结构条件的形态。继续观察波段、价位与成交量。</div>';
       return;
@@ -98,7 +98,7 @@
     $('trend-outlook-card').dataset.direction = outlook?.direction || 'unclear';
     $('trend-current').textContent = outlook?.current || '暂时无法判断走势';
     $('buy-score').textContent = score == null ? '—' : String(score);
-    $('buy-score-label').textContent = score == null ? '等待新的价格数据' : score === 0 ? '目前缺少可以延续的明确方向' : outlook.direction.endsWith('_lean') ? '已有方向线索，但近期趋势尚未确认' : '分数越低，原方向越需要重新确认';
+    $('buy-score-label').textContent = score == null ? '等待新的价格数据' : score === 0 ? '当前缺少完整的单边趋势结构' : outlook.direction.endsWith('_lean') ? '有方向线索，波段趋势尚未确认' : '分数描述当前结构，不保证后续延续';
     $('buy-score-fill').style.width = `${score == null ? 0 : score}%`;
     document.querySelector('.buy-score-track').style.display = score == null ? 'none' : '';
     $('trend-why').textContent = outlook?.why || '暂无判断依据。';
@@ -155,7 +155,7 @@
     state.result = null;
     state.replayLoading = false;
     $('run-replay').disabled = false;
-    $('replay-results').textContent = '点击“查看历史”，了解这些图形过去出现后的股价变化。';
+    $('replay-results').textContent = '点击“查看历史”，对照图形和趋势判断的后续表现。';
     $('buy-score').textContent = '—';
     $('trend-outlook-card').dataset.direction = 'unclear';
     $('trend-current').textContent = '正在判断当前走势…';
@@ -165,11 +165,11 @@
     $('buy-validation').textContent = '';
     $('buy-score-fill').style.width = '0%';
     $('trend-why').textContent = '正在读取价格…';
-    $('trend-next').textContent = '正在分析后续走势…';
+    $('trend-next').textContent = '正在整理观察条件…';
     $('trend-watch').textContent = '正在找关键价…';
     $('trend-if-holds').textContent = '';
     $('trend-if-breaks').textContent = '';
-    $('buy-score-note').textContent = '这是当前图形的判断分，不是未来涨跌概率。';
+    $('buy-score-note').textContent = '分数只描述当前图形；历史检查未证明它能预测未来方向。';
     $('summary').textContent = '正在获取历史价格并匹配书籍规则…';
     $('ticker-meta').textContent = '正在获取历史日线…';
     const params = new URLSearchParams({symbol:state.symbol,period:state.period,interval:state.interval});
@@ -214,12 +214,23 @@
         const average = item.complete_windows > 1 ? '平均' : '';
         return `<div class="replay-row"><span><b>${esc(item.pattern)} · ${expectation}</b><small>出现 ${item.signals} 次，其中 ${item.complete_windows} 次有完整后续数据</small></span><div class="replay-move"><strong>${horizonName}后股价${average}${moved}</strong><small>${match}</small></div></div>`;
       }).join('');
+      const comparison = result.trend_evaluation;
+      let trendHtml = '<div class="trend-eval"><strong>趋势判断的历史对照</strong><p>这段行情不足以形成完整的趋势观察窗口；可换更长的时间范围。</p></div>';
+      if (comparison?.available) {
+        const counts = comparison.summary;
+        const n = counts.directional_count;
+        const verdict = n < 20 ? '样本较少，先看案例，不据此判断规则可靠性。'
+          : counts.direction_aligned_count <= counts.always_up_aligned_same_dates
+            ? '这段历史里，趋势规则没有超过“一直看涨”的简单对照。'
+            : '这段历史里规则高于简单对照，但不能据此推断下一次也会准确。';
+        trendHtml = `<div class="trend-eval"><strong>趋势判断的历史对照</strong><p>每隔 ${horizonName} 取一次当时的判断，只对照之后同等时间的价格方向。</p><div class="trend-eval-grid"><div><span>趋势规则方向一致</span><b>${counts.direction_aligned_count} / ${n}</b></div><div><span>之前涨跌直接延续</span><b>${counts.past_momentum_aligned_same_dates} / ${n}</b></div><div><span>一直看涨（对照）</span><b>${counts.always_up_aligned_same_dates} / ${n}</b></div></div><p>${esc(verdict)} 这是价格方向对照，不是交易收益或下一次的成功率。</p></div>`;
+      }
       const notes = ['这里只对照后来股价的变化，没有模拟买卖、止损和手续费。过去的走势不能预测下一次。'];
       if (result.by_pattern.some(item => item.small_sample)) notes.push('每类图形的例子较少，先把数字当作案例看。');
       if (result.source.adjustment?.includes('auto_adjust')) notes.push('历史价格经过分红和拆股调整，可能和当时看到的价格不同。');
       if (result.data_quality.issues.length) notes.push('行情中有需要核查的记录，先确认数据是否准确。');
       if (result.pending_count) notes.push(`${result.pending_count} 次出现得太近，还没有足够的后续行情。`);
-      $('replay-results').innerHTML = `<div class="replay-overview">${periodName}找到 ${result.signal_count} 次符合规则的图形，分布在 ${result.unique_signal_days} 个交易日；其中 ${result.complete_count} 次可以看完整的后续 ${horizonName}。</div>${rows || '<p class="mini-note">这段时间没有找到符合规则的新图形。</p>'}${notes.map(note => `<div class="replay-warning">${esc(note)}</div>`).join('')}`;
+      $('replay-results').innerHTML = `<div class="replay-overview">${periodName}找到 ${result.signal_count} 次符合规则的图形，分布在 ${result.unique_signal_days} 个交易日；其中 ${result.complete_count} 次可以看完整的后续 ${horizonName}。</div>${rows || '<p class="mini-note">这段时间没有找到符合规则的新图形。</p>'}${trendHtml}${notes.map(note => `<div class="replay-warning">${esc(note)}</div>`).join('')}`;
     } catch (error) {
       if (id === replayRequestId) $('replay-results').textContent = `回放失败：${error.message}`;
     } finally {

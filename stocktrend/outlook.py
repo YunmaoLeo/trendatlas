@@ -46,14 +46,14 @@ def _downside_reference(analysis: dict) -> tuple[int | None, dict, list[dict], i
     return score, reference, parts, structure_ceiling, cushion
 
 
-def trend_outlook(analysis: dict) -> dict:
+def trend_outlook(analysis: dict, evaluation_date: date | None = None) -> dict:
     """Explain the current direction and what would support or weaken it."""
     raw = analysis["trend"]["direction"]
     close = analysis["last"]["close"]
     interval = analysis.get("source", {}).get("interval", "1d")
     horizon = "接下来几周" if interval == "1wk" else "接下来几个交易日"
     max_age = 21 if interval == "1wk" else 7
-    stale = (date.today() - date.fromisoformat(analysis["last"]["date"])).days > max_age
+    stale = ((evaluation_date or date.today()) - date.fromisoformat(analysis["last"]["date"])).days > max_age
     atr = analysis["risk"].get("atr20")
     direction = "unclear"
     reference = None
@@ -79,7 +79,7 @@ def trend_outlook(analysis: dict) -> dict:
         elif atr and close - price < atr:
             expected = f"{horizon}仍可能向上，但已经靠近关键价，走势容易反复。"
         else:
-            expected = f"{horizon}可先按上涨可能延续观察，同时留意回落。"
+            expected = f"{horizon}先看能否守住下方关键价；守住才有继续上涨的图形依据。"
         watch = f"重点看 {price:.2f} 附近"
         holds = f"若价格继续守在 {price:.2f} 上方，上涨结构仍有依据。"
         breaks = f"若收盘跌到 {price:.2f} 下方，先重新判断，不能直接当作已进入跌势。"
@@ -97,7 +97,7 @@ def trend_outlook(analysis: dict) -> dict:
         elif atr and price - close < atr:
             expected = f"{horizon}仍可能偏弱，但已经靠近关键价，反弹和反复的可能性增加。"
         else:
-            expected = f"{horizon}可先按偏弱走势可能延续观察，同时留意反弹。"
+            expected = f"{horizon}先看能否保持在上方关键价之下；站回去就要重判。"
         watch = f"重点看 {price:.2f} 附近"
         holds = f"若价格仍在 {price:.2f} 下方，下跌结构仍有依据。"
         breaks = f"若收盘升到 {price:.2f} 上方，先重新判断，不能直接当作已进入涨势。"
@@ -134,7 +134,7 @@ def trend_outlook(analysis: dict) -> dict:
             else:
                 current = "有上涨迹象，趋势尚未确认"
                 why = "有一些偏上的图形线索，但高点和低点还没有一起抬高。"
-            expected = (f"{horizon}可能先来回波动；若向上走出当前范围，偏上涨判断会更有依据。"
+            expected = (f"{horizon}观察是否向上走出当前范围；出现前不把它当作上涨已延续。"
                         if raw == "区间或过渡" else "先等更多价格变化，才能判断上涨是否会继续。")
         elif down_clue > up_clue:
             direction = "down_lean"
@@ -151,14 +151,14 @@ def trend_outlook(analysis: dict) -> dict:
             else:
                 current = "有下跌迹象，趋势尚未确认"
                 why = "有一些偏下的图形线索，但高点和低点还没有一起降低。"
-            expected = (f"{horizon}可能先来回波动；若向下走出当前范围，偏下跌判断会更有依据。"
+            expected = (f"{horizon}观察是否向下走出当前范围；出现前不把它当作下跌已延续。"
                         if raw == "区间或过渡" else "先等更多价格变化，才能判断下跌是否会继续。")
         else:
             score = 0
             current = "现在还看不出明确方向" if raw == "区间或过渡" else "目前数据还不够判断趋势"
             why = ("上涨和下跌的图形线索差不多，暂时不押一个方向。"
                    if raw == "区间或过渡" else "还没有足够的已确认高点和低点。")
-            expected = f"{horizon}先按来回波动观察，等价格走出目前的上下范围再判断。"
+            expected = f"{horizon}观察是否走出目前的上下范围；出现前暂不判断延续方向。"
         summary = f"{current}。{watch}；走出这个范围后再判断后续方向。"
 
     if stale:
@@ -182,14 +182,17 @@ def trend_outlook(analysis: dict) -> dict:
     elif score is None:
         confidence_meaning = "波动幅度数据不足，暂时无法计算把握分。"
     elif direction == "unclear":
-        confidence_meaning = "0 分表示目前没有明确的单边趋势可延续，不代表一定下跌。"
+        confidence_meaning = "0 分表示当前缺少明确的单边结构；它不预测未来方向。"
     elif direction in {"up_lean", "down_lean"}:
-        confidence_meaning = "这是偏向该方向的图形线索分，近期趋势尚未确认；不是未来概率。"
+        confidence_meaning = "这是尚未确认的图形线索分；历史检查未证明它能预测未来方向。"
     else:
-        confidence_meaning = "当前图形对这一方向继续发展的支持程度，不是未来涨跌概率。"
+        confidence_meaning = "当前图形的结构分；历史检查未证明它能预测未来方向。"
 
     return {
         "direction": direction, "current": current, "confidence_score": score,
+        "score_kind": "structural_evidence_not_probability",
+        "forecast_validation": {"status": "not_established",
+                                "message": "历史方向对照未显示稳定优势；请将后续文字作为条件观察，不把分数当预测概率。"},
         "confidence_meaning": confidence_meaning,
         "why": why, "expected": expected, "watch": watch,
         "if_holds": holds, "if_breaks": breaks, "summary": summary,

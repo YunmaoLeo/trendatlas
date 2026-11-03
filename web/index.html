@@ -7,7 +7,7 @@
   <title>Trend Atlas · 股市趋势技术分析</title>
   <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="/assets/style.css">
-  <link rel="stylesheet" href="/assets/trend-score.css?v=1.6.0-final">
+  <link rel="stylesheet" href="/assets/trend-score.css?v=1.7.0">
 </head>
 <body>
   <div class="app-shell">
@@ -16,7 +16,7 @@
       <button class="rail-icon active" title="图表" aria-label="图表">▥</button>
       <button class="rail-icon" id="rail-rules" title="规则" aria-label="规则">≡</button>
       <div class="rail-spacer"></div>
-      <div class="rail-footer">ATLAS<br><span>v1.6</span></div>
+      <div class="rail-footer">ATLAS<br><span>v1.7</span></div>
     </aside>
 
     <div class="workspace">
@@ -37,7 +37,7 @@
             <div class="last-price"><strong id="last-price">—</strong><span id="last-change">—</span></div>
           </div>
 
-          <section class="buy-score-card" id="trend-outlook-card" aria-label="当前趋势判断"><div class="buy-score-top"><div><div class="eyebrow">CURRENT TREND / WHAT TO WATCH</div><h2 id="trend-current">正在判断当前走势…</h2><p id="buy-score-label">看图上的价格变化，不猜固定目标价。</p></div><div class="buy-score-number"><strong id="buy-score">—</strong><span>趋势判断把握 / 100</span></div></div><div class="buy-score-track"><div id="buy-score-fill"></div></div><div class="trend-story"><div><span>为什么这样看</span><p id="trend-why">正在读取价格…</p></div><div><span>接下来可能怎样</span><p id="trend-next">正在分析后续走势…</p></div></div><div class="trend-watch"><strong id="trend-watch">正在找关键价…</strong><p id="trend-if-holds"></p><p id="trend-if-breaks"></p></div><details class="trend-details"><summary>分数和依据怎么看？</summary><div id="buy-validation" class="buy-validation"></div><div id="buy-score-parts" class="buy-score-parts"></div></details><p id="buy-score-note" class="mini-note">这是当前图形的判断分，不是未来涨跌概率。</p></section>
+          <section class="buy-score-card" id="trend-outlook-card" aria-label="当前趋势判断"><div class="buy-score-top"><div><div class="eyebrow">CURRENT TREND / WHAT TO WATCH</div><h2 id="trend-current">正在判断当前走势…</h2><p id="buy-score-label">根据目前图形判断，后续需要继续观察。</p></div><div class="buy-score-number"><strong id="buy-score">—</strong><span>当前图形结构分 / 100</span></div></div><div class="buy-score-track"><div id="buy-score-fill"></div></div><div class="trend-story"><div><span>为什么这样看</span><p id="trend-why">正在读取价格…</p></div><div><span>后续要观察什么</span><p id="trend-next">正在整理观察条件…</p></div></div><div class="trend-watch"><strong id="trend-watch">正在找关键价…</strong><p id="trend-if-holds"></p><p id="trend-if-breaks"></p></div><details class="trend-details"><summary>分数和依据怎么看？</summary><div id="buy-validation" class="buy-validation"></div><div id="buy-score-parts" class="buy-score-parts"></div></details><p id="buy-score-note" class="mini-note">分数只描述当前图形；历史检查未证明它能预测未来方向。</p></section>
 
           <div class="chart-card">
             <div class="chart-toolbar">
@@ -64,7 +64,7 @@
           <div class="section-heading"><div><div class="eyebrow">PRICE EVENTS / CH. 10 &amp; 12</div><h2>近期异常波动</h2></div><span class="heading-note" id="event-count">—</span></div>
           <div id="events" class="event-list"><div class="empty-card">正在检索价格事件…</div></div>
 
-          <section class="replay-card"><div class="replay-head"><div><div class="eyebrow">HISTORICAL REPLAY</div><h2>以前出现类似图形后，股价怎么走？</h2></div><button id="run-replay" type="button">查看历史</button></div><p class="mini-note">按当时已有的价格找出图形，再看之后 20 个交易日（日线）或 8 周（周线）的实际涨跌。</p><div id="replay-results" class="replay-results">点击“查看历史”，了解这些图形过去出现后的股价变化。</div></section>
+          <section class="replay-card"><div class="replay-head"><div><div class="eyebrow">HISTORICAL REPLAY</div><h2>以前出现类似图形后，股价怎么走？</h2></div><button id="run-replay" type="button">查看历史</button></div><p class="mini-note">只用当时已有的价格判断，再看之后 20 个交易日（日线）或 8 周（周线）的实际涨跌；同时与简单方向对照。</p><div id="replay-results" class="replay-results">点击“查看历史”，对照图形和趋势判断的后续表现。</div></section>
 
           <div class="bottom-grid">
             <section class="info-card"><div class="info-top"><span class="eyebrow">LEVELS</span><span class="chapter">第 13 章</span></div><h3>需要关注的价格</h3><div id="levels" class="level-list"></div><p class="mini-note">这些价格来自以前的高点和低点，只是观察范围。</p></section>
@@ -86,9 +86,9 @@
     </div>
   </div>
 
-  <dialog id="rules-dialog"><div class="dialog-head"><div><div class="eyebrow">METHODOLOGY</div><h2>趋势判断怎么来的？</h2></div><button id="close-rules" aria-label="关闭">×</button></div><ol><li>先找最近几次明确的高点和低点。两者都逐步抬高，判断偏上涨；都逐步降低，判断偏下跌。</li><li>再看价格是否靠近会改变判断的关键价。越靠近，继续原方向的把握越低。</li><li>分数还参考价格与近 50 期、200 期平均价的关系；具体条件可在趋势卡片里展开。</li><li>如果高点和低点给出的方向不一致，就先写“方向不明”，等价格走出目前的范围。</li><li>图形突破通常要看收盘价是否明显越过边界。向上突破还要结合成交量。</li></ol><p>分数是图形规则的刻度，不是未来涨跌概率。原书依据和工程参数见项目 KNOWLEDGE.md。</p></dialog>
+  <dialog id="rules-dialog"><div class="dialog-head"><div><div class="eyebrow">METHODOLOGY</div><h2>趋势判断怎么来的？</h2></div><button id="close-rules" aria-label="关闭">×</button></div><ol><li>先找最近几次明确的高点和低点。两者都逐步抬高，判断偏上涨；都逐步降低，判断偏下跌。</li><li>再看价格是否靠近会改变判断的关键价。越靠近，当前图形的结构分越低。</li><li>分数还参考价格与近 50 期、200 期平均价的关系；具体条件可在趋势卡片里展开。</li><li>如果高点和低点给出的方向不一致，就先写“方向不明”，等价格走出目前的范围。</li><li>图形突破通常要看收盘价是否明显越过边界。向上突破还要结合成交量。</li></ol><p>分数只描述当前图形，不是未来方向的置信概率。历史对照目前未显示稳定预测优势；原书依据和工程参数见项目 KNOWLEDGE.md。</p></dialog>
   <div id="toast" role="status" aria-live="polite"></div>
   <script src="/assets/vendor/lightweight-charts.js"></script>
-  <script src="/assets/app.js?v=1.6.0-final"></script>
+  <script src="/assets/app.js?v=1.7.0"></script>
 </body>
 </html>

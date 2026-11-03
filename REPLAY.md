@@ -29,3 +29,16 @@
 ## Coding agent 读取顺序
 
 先检查 `source.as_of`、`data_quality.issues`、`complete_count`、`pending_count` 和 `warnings`；再看 `by_pattern` 的样本量；最后才引用单条 `signals[].outcome`。若样本少、质量有问题、或期间含公司行为，应优先报告这些事实。
+
+## 趋势方向对照（v1.7）
+
+`stocktrend.evaluate` 是独立的、可供 coding agent 调用的趋势历史检查。它从至少 200 根 K 线的预热后，每隔 `horizon` 根取一次快照；快照只读当天及之前的数据，评估时钟明确设为快照当天。该标的的未来观察窗口互不重叠。只有规则给出上/下方向的日期才与两条简单对照比较：过去同等期数价格方向直接延续，以及一律看涨。返回同日期上的方向一致次数，不把它叫交易胜率。
+
+`stocktrend.replay` 的 JSON 现在也有 `trend_evaluation` 字段，前端“查看历史”会同时展示这三种方向对照。若所选历史不足以形成完整窗口，`available=false`，不补造分数或结论。
+
+```bash
+.venv/bin/python -m stocktrend.evaluate VOO QQQ NVDA MU --period 5y --horizon 20 --split-date 2026-01-01 > /tmp/trend-comparison.json
+.venv/bin/python -m stocktrend.evaluate TEST --csv ./sample.csv --horizon 20
+```
+
+`--split-date` 只把结果分段展示，程序不训练模型、不从未来挑阈值。观察过结果后选定的日期不能再声称是严格未见过的测试集。不同标的可能同涨同跌；复权历史也可随公司行为修订，不能据此证明未来预测优势。

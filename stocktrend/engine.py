@@ -545,7 +545,7 @@ def _stop_reference(bars: list[dict], pivots: list[dict], capital: float | None,
 
 def analyze(bars: list[dict], symbol: str, source: dict | None = None,
             capital: float | None = None, risk_pct: float = 1,
-            entry_date: str | None = None) -> dict:
+            entry_date: str | None = None, evaluation_date: date | None = None) -> dict:
     bars = validate_bars(bars)
     pivots = _pivots(bars)
     trend = _trend(bars, pivots)
@@ -574,7 +574,7 @@ def analyze(bars: list[dict], symbol: str, source: dict | None = None,
     if len(bars) < 120:
         warnings.append("样本少于 120 根 K 线，长线形态和 200 期均线不可用")
     try:
-        age = (date.today() - date.fromisoformat(bars[-1]["date"])).days
+        age = ((evaluation_date or date.today()) - date.fromisoformat(bars[-1]["date"])).days
         if age > 7:
             warnings.append(f"最后一根 K 线距今 {age} 天，请检查数据是否过期")
     except ValueError:
@@ -612,6 +612,6 @@ def analyze(bars: list[dict], symbol: str, source: dict | None = None,
                    "up_volume_ratio": UP_VOLUME, "pivot_radius": PIVOT_RADIUS,
                    "note": "量化阈值中部分为工程选择；详见 KNOWLEDGE.md。测算目标为形态幅度，不是价格预测。"},
     }
-    result["buy_reference"] = buy_reference(result)
-    result["trend_outlook"] = trend_outlook(result)
+    result["buy_reference"] = buy_reference(result, evaluation_date)
+    result["trend_outlook"] = trend_outlook(result, evaluation_date)
     return result

@@ -3,6 +3,7 @@ from datetime import date, timedelta
 
 from stocktrend.data import audit_bars, normalize_symbol, validate_bars
 from stocktrend.engine import _pivots, analyze
+from stocktrend.evaluate import evaluate_trend
 from stocktrend.portfolio import assess
 from stocktrend.replay import replay
 from stocktrend.score import buy_reference
@@ -116,6 +117,23 @@ class EngineTest(unittest.TestCase):
         self.assertEqual(early["signals"][0], later["signals"][0])
         self.assertEqual(early["signals"][0]["pattern"], "双重顶")
         self.assertTrue(early["signals"][0]["outcome"]["complete"])
+
+    def test_historical_evaluation_uses_snapshot_clock(self):
+        bars = bars_from_points([(0, 100), (100, 120), (200, 145), (239, 160)])
+        old = analyze(bars, "TEST")
+        historical = analyze(bars, "TEST", evaluation_date=date.fromisoformat(bars[-1]["date"]))
+        self.assertEqual(old["trend_outlook"]["direction"], "stale")
+        self.assertNotEqual(historical["trend_outlook"]["direction"], "stale")
+        self.assertNotIn("行情过期", " ".join(historical["warnings"]))
+
+    def test_trend_evaluation_windows_do_not_overlap_or_read_future(self):
+        bars = bars_from_points([(0, 100), (100, 120), (200, 145), (280, 130)])
+        short = evaluate_trend(bars[:240], "TEST", horizon=20, warmup=200)
+        full = evaluate_trend(bars, "TEST", horizon=20, warmup=200)
+        self.assertEqual(short["observations"], full["observations"][:len(short["observations"])])
+        self.assertEqual(full["summary"]["observation_count"], 4)
+        self.assertEqual(full["observations"][1]["date"], bars[219]["date"])
+        self.assertEqual(full["observations"][1]["evaluation_end_date"], bars[239]["date"])
 
     def test_data_audit_flags_without_dropping_bars(self):
         bars = bars_from_points([(0,100),(60,100)])

@@ -5,10 +5,12 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+from datetime import date
 from statistics import mean, median
 
 from .data import audit_bars, from_csv, from_yfinance, normalize_symbol, validate_bars
 from .engine import analyze
+from .evaluate import evaluate_trend
 
 
 def _rounded(value: float | None) -> float | None:
@@ -76,7 +78,8 @@ def replay(bars: list[dict], symbol: str, horizon: int = 20, warmup: int = 120,
     for index in range(warmup - 1, len(bars)):
         prefix = bars[:index + 1]
         snapshot = analyze(prefix, symbol, source={"provider": "prefix replay", "as_of": prefix[-1]["date"],
-                                                    "interval": interval})
+                                                    "interval": interval},
+                           evaluation_date=date.fromisoformat(prefix[-1]["date"]))
         for pattern in snapshot["patterns"]:
             if pattern["status"] != "已确认" or pattern["direction"] not in {"up", "down"}:
                 continue
@@ -105,11 +108,13 @@ def replay(bars: list[dict], symbol: str, horizon: int = 20, warmup: int = 120,
     adjustment = (source or {}).get("adjustment", "")
     if "auto_adjust" in adjustment:
         warnings.append("复权历史可能受后续拆股和分红回溯修订；这不是严格的点时可得数据回测")
-    return {"schema_version": "1.0", "symbol": symbol, "source": source or {"provider": "supplied bars", "as_of": bars[-1]["date"]},
+    trend_check = evaluate_trend(bars, symbol, horizon, max(200, horizon + 1), interval, source)
+    return {"schema_version": "1.1", "symbol": symbol, "source": source or {"provider": "supplied bars", "as_of": bars[-1]["date"]},
             "horizon_bars": horizon, "warmup_bars": warmup, "data_quality": quality,
             "signal_count": len(events), "unique_signal_days": len({event["signal_date"] for event in events}),
             "complete_count": len(completed),
             "pending_count": len(events) - len(completed), "by_pattern": _summarize(events),
+            "trend_evaluation": trend_check,
             "signals": events, "warnings": warnings,
             "method": {"signal_generation": "每一历史日期仅将该日及之前 K 线传入当前规则引擎；新确认形态只计一次",
                        "measurement": "确认日收盘价到未来第 horizon 根 K 线收盘的方向化变动；未来高低价只用于事后有利/不利幅度和目标触及",
